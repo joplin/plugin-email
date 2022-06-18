@@ -6,7 +6,7 @@
 	"name": "Email Plugin",
 	"description": "Fetch your important emails as notes.",
 	"author": "Bishoy Magdy",
-	"homepage_url": "",
-	"repository_url": "",
+	"homepage_url": "https://github.com/joplin/plugin-email",
+	"repository_url": "https://github.com/joplin/plugin-email",
 	"keywords": ["Email", "email"]
 }
