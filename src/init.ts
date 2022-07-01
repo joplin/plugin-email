@@ -2,13 +2,18 @@ import joplin from 'api';
 import { ToolbarButtonLocation, MenuItemLocation } from 'api/types';
 import { SECTION_NAME, PLUGIN_ICON } from './constants'
 import { setting } from './setting';
+import { Panel } from './ui/panel';
 
 
 export default class App {
+    panel: Panel
 
     async init() {
         await this.setupSetting();
         await this.setupToolbar();
+
+        this.panel = new Panel();
+        await this.panel.setupPanel();
     }
 
     async setupSetting() {
@@ -29,9 +34,8 @@ export default class App {
             label: 'Email Plugin',
             iconName: PLUGIN_ICON,
             execute: async () => {
-                // take-off point
-                console.log('Email Plugin Started.');
-                // new Panel
+                // When clicking on an email icon or an email plugin button in Tools, it will close the panel if the panel is open and vice versa.
+                this.panel.closeOpenPanel();
             },
         });
 
