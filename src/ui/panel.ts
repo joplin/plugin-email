@@ -1,6 +1,8 @@
 import joplin from 'api';
 import JoplinViewsPanels from 'api/JoplinViewsPanels';
-import { Message } from '../model/message.model'
+import { Message, Login, isLogin, isHide, isManualConnection } from '../model/message.model'
+import { ImapConfig } from 'src/model/imapConfig.model';
+import { emailParser } from '../core/emailParser';
 
 
 export class Panel {
@@ -56,15 +58,19 @@ export class Panel {
   }
 
   async bridge(message: Message) {
-    switch (message.hide || message.login || message.manual_connection) {
-      case message.login:
-        // parsing email & start Imap eonnection
-        console.log(message);
+
+    switch (message !== undefined) {
+      // parsing email & start Imap eonnection
+      case isLogin(message):
+        const imapConfig: ImapConfig = emailParser(message as Login);
+
+        // It will alert the user using the manual connection if it can't find an email provider in the email providers list.
+        !imapConfig ? console.log('Alert the user using the manual screen.') : console.log('Passing the object to IMAP', imapConfig);
         break;
-      case message.hide:
+      case isHide(message):
         this.closeOpenPanel();
         break;
-      case message.manual_connection:
+      case isManualConnection(message):
         console.log('set Manual Screen');
         break;
     }
