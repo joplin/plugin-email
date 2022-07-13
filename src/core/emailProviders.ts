@@ -1,4 +1,4 @@
-import { EmailProvider } from "src/model/emailProvider.model";
+import { EmailProvider } from "../model/emailProvider.model";
 
 export const emailProviders: EmailProvider[] = [
 
@@ -7,7 +7,6 @@ export const emailProviders: EmailProvider[] = [
         host: 'imap.gmail.com',
         port: 993,
         tls: true,
-        tlsOptions: { servername: 'imap.gmail.com' }
     },
 
     {
@@ -15,7 +14,6 @@ export const emailProviders: EmailProvider[] = [
         host: 'outlook.office365.com',
         port: 993,
         tls: true,
-        tlsOptions: { servername: 'outlook.office365.com' }
     },
 
     {
@@ -23,7 +21,6 @@ export const emailProviders: EmailProvider[] = [
         host: 'imap.mail.me.com',
         port: 993,
         tls: true,
-        tlsOptions: { servername: 'imap.mail.me.com' }
     },
 
     {
@@ -31,8 +28,6 @@ export const emailProviders: EmailProvider[] = [
         host: 'imap.mail.yahoo.com',
         port: 993,
         tls: true,
-        tlsOptions: { servername: 'imap.mail.yahoo.com' }
-
     },
 
     {
@@ -40,7 +35,6 @@ export const emailProviders: EmailProvider[] = [
         host: 'imap.aol.com',
         port: 993,
         tls: true,
-        tlsOptions: { servername: 'imap.aol.com' }
     },
 
     {
@@ -48,7 +42,6 @@ export const emailProviders: EmailProvider[] = [
         host: 'imap.zoho.com',
         port: 993,
         tls: true,
-        tlsOptions: { servername: 'imap.zoho.com' }
     },
 
     {
@@ -56,7 +49,6 @@ export const emailProviders: EmailProvider[] = [
         host: 'imap.yandex.com',
         port: 993,
         tls: true,
-        tlsOptions: { servername: 'imap.yandex.com' }
     }
 
 ]

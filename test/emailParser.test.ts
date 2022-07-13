@@ -1,4 +1,4 @@
-import { emailParser } from "../src/core/emailParser";
+import { emailConfigure } from "../src/core/emailParser";
 import { Login } from '../src/model/message.model';
 import { ImapConfig } from '../src/model/imapConfig.model';
 
@@ -13,7 +13,7 @@ describe('Testing various types of writing the email', () => {
             password: '12345'
         }
 
-        const config = emailParser(login);
+        const config = emailConfigure(login);
 
         const answer: ImapConfig = {
             user: 'test@gmail.com',
@@ -22,7 +22,6 @@ describe('Testing various types of writing the email', () => {
             host: 'imap.gmail.com',
             port: 993,
             tls: true,
-            tlsOptions: { servername: 'imap.gmail.com' },
         }
 
         expect(config).toStrictEqual(answer);
@@ -37,7 +36,7 @@ describe('Testing various types of writing the email', () => {
             password: '12345'
         }
 
-        const config = emailParser(login);
+        const config = emailConfigure(login);
 
         const answer: ImapConfig = {
             user: 'test@gmail.com',
@@ -46,7 +45,6 @@ describe('Testing various types of writing the email', () => {
             host: 'imap.gmail.com',
             port: 993,
             tls: true,
-            tlsOptions: { servername: 'imap.gmail.com' },
         }
 
         expect(config).toStrictEqual(answer);
@@ -61,7 +59,7 @@ describe('Testing various types of writing the email', () => {
             password: '12345'
         }
 
-        const config = emailParser(login);
+        const config = emailConfigure(login);
 
         const answer: ImapConfig = {
             user: 'test@outlook.com',
@@ -70,7 +68,6 @@ describe('Testing various types of writing the email', () => {
             host: 'outlook.office365.com',
             port: 993,
             tls: true,
-            tlsOptions: { servername: 'outlook.office365.com' },
         }
 
         expect(config).toStrictEqual(answer);
@@ -85,7 +82,7 @@ describe('Testing various types of writing the email', () => {
             password: '12345'
         }
 
-        const config = emailParser(login);
+        const config = emailConfigure(login);
 
         const answer: ImapConfig = {
             user: 'gmail@aol.com',
@@ -94,7 +91,6 @@ describe('Testing various types of writing the email', () => {
             host: 'imap.aol.com',
             port: 993,
             tls: true,
-            tlsOptions: { servername: 'imap.aol.com' },
         }
 
         expect(config).toStrictEqual(answer);
@@ -109,7 +105,7 @@ describe('Testing various types of writing the email', () => {
             password: '12345'
         }
 
-        const config = emailParser(login);
+        const config = emailConfigure(login);
 
         const answer = undefined;
 

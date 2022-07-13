@@ -3,7 +3,7 @@ import { emailProviders } from './emailProviders'
 import { ImapConfig } from '../model/imapConfig.model';
 import { EmailProvider } from 'src/model/emailProvider.model';
 
-export function emailParser(login: Login): ImapConfig | undefined {
+export function emailConfigure(login: Login): ImapConfig | undefined {
 
     let user = login.email;
     const password = login.password;

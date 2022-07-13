@@ -4,5 +4,4 @@ export interface EmailProvider {
     host: string,
     port: number,
     tls?: boolean,
-    tlsOptions?: object
 }
