@@ -28,4 +28,49 @@ function hide() {
     });
 }
 
+// When clicking on the 'login screen' button.
+function loginScreen() {
 
+    webviewApi.postMessage({
+        login_screen: true,
+    });
+}
+
+// When clicking on the 'login' button on the manual screen.
+function loginManually() {
+
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const server = document.getElementById("server").value;
+    const ssl_tls = document.getElementById("ssl_tls").checked
+    const port = document.getElementById("port").value;
+
+    webviewApi.postMessage({
+        login_manually: true,
+        user: email,
+        password: password,
+        host: server,
+        port: port,
+        tls: ssl_tls,
+    });
+}
+
+function toggle() {
+    let from = document.getElementById('from').value;
+    let readOnly = document.getElementById('from').readOnly;
+
+    // It sends an email and then closes input.
+    if (!readOnly) {
+        webviewApi.postMessage({
+            state: 'close',
+            from: from
+        });
+        document.getElementById('from').readOnly = !readOnly;
+    }
+    else {
+        webviewApi.postMessage({
+            state: 'open',
+        });
+        document.getElementById('from').readOnly = !readOnly;
+    }
+}

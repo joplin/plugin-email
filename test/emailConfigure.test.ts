@@ -1,4 +1,4 @@
-import { emailConfigure } from "../src/core/emailParser";
+import { emailConfigure } from "../src/core/emailConfigure";
 import { Login } from '../src/model/message.model';
 import { ImapConfig } from '../src/model/imapConfig.model';
 
