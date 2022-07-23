@@ -1,4 +1,4 @@
-import { ImapConfig } from "./imapConfig.model";
+import {ImapConfig} from './imapConfig.model';
 
 export interface Login {
     login: true,
@@ -45,8 +45,8 @@ export interface LoginManually extends ImapConfig {
 
 // Type predicates
 export function isLoginManually(message: any): message is LoginManually {
-    return 'login_manually' in message && 'user' in message && 'password' in message
-        && 'host' in message && 'port' in message && 'tls' in message;
+    return 'login_manually' in message && 'user' in message && 'password' in message &&
+        'host' in message && 'port' in message && 'tls' in message;
 }
 
 export interface SearchByFrom {
@@ -56,10 +56,11 @@ export interface SearchByFrom {
 
 // Type predicates
 export function isSearchByFrom(message: any): message is SearchByFrom {
-    if (message.state == 'close')
+    if (message.state === 'close') {
         return 'state' in message && 'from' in message;
-    else
+    } else {
         return 'state' in message;
+    }
 }
 
 export type Message = Login | ManualConnection | Hide | LoginScreen | LoginManually | SearchByFrom;

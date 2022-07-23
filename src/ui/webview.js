@@ -1,20 +1,19 @@
+/* eslint-disable no-unused-vars */
+
 // When clicking on the 'login' button.
 function login() {
-
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
 
     webviewApi.postMessage({
         login: true,
         email: email,
-        password: password
+        password: password,
     });
-
 }
 
 // When clicking on the 'Manually connect to IMAP' button.
 function manualConnection() {
-
     webviewApi.postMessage({
         manual_connection: true,
     });
@@ -22,7 +21,6 @@ function manualConnection() {
 
 // When clicking on the 'close' button.
 function hide() {
-
     webviewApi.postMessage({
         hide: true,
     });
@@ -30,7 +28,6 @@ function hide() {
 
 // When clicking on the 'login screen' button.
 function loginScreen() {
-
     webviewApi.postMessage({
         login_screen: true,
     });
@@ -38,12 +35,11 @@ function loginScreen() {
 
 // When clicking on the 'login' button on the manual screen.
 function loginManually() {
-
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-    const server = document.getElementById("server").value;
-    const ssl_tls = document.getElementById("ssl_tls").checked
-    const port = document.getElementById("port").value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const server = document.getElementById('server').value;
+    const sslTls = document.getElementById('ssl_tls').checked;
+    const port = document.getElementById('port').value;
 
     webviewApi.postMessage({
         login_manually: true,
@@ -51,23 +47,22 @@ function loginManually() {
         password: password,
         host: server,
         port: port,
-        tls: ssl_tls,
+        tls: sslTls,
     });
 }
 
 function toggle() {
-    let from = document.getElementById('from').value;
-    let readOnly = document.getElementById('from').readOnly;
+    const from = document.getElementById('from').value;
+    const readOnly = document.getElementById('from').readOnly;
 
     // It sends an email and then closes input.
     if (!readOnly) {
         webviewApi.postMessage({
             state: 'close',
-            from: from
+            from: from,
         });
         document.getElementById('from').readOnly = !readOnly;
-    }
-    else {
+    } else {
         webviewApi.postMessage({
             state: 'open',
         });

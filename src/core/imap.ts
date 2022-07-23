@@ -1,22 +1,20 @@
-import * as Imap from 'imap'
-import { ImapConfig } from '../model/imapConfig.model';
-import { Query } from '../model/Query.model';
+import * as Imap from 'imap';
+import {ImapConfig} from '../model/imapConfig.model';
+import {Query} from '../model/Query.model';
 
 export class IMAP {
-
     private imap = null;
     private monitorId = null;
     private query: Query = null;
     private delayTime = 1000 * 5;
 
     constructor(config: ImapConfig) {
-
         this.imap = new Imap({
             ...config,
             authTimeout: 10000,
             connTimeout: 30000,
             tlsOptions: {
-                rejectUnauthorized: false
+                rejectUnauthorized: false,
             },
 
         });
@@ -24,15 +22,14 @@ export class IMAP {
 
     init() {
         return new Promise((resolve, reject) => {
-
             this.imap.connect();
 
-            this.imap.once("ready", function () {
+            this.imap.once('ready', ()=> {
                 console.log('%c---------------------  SUCCESSFUL IMAP CONNECTION  --------------------', 'color: Green');
                 resolve(this.imap);
             });
 
-            this.imap.once('error', function (err: Error) {
+            this.imap.once('error', function(err: Error) {
                 reject(err);
             });
         });
@@ -44,12 +41,10 @@ export class IMAP {
 
     openBox(mailBox, readOnly = true) {
         return new Promise((resolve, reject) => {
-
             this.imap.openBox(mailBox, readOnly, (err, box) => {
                 if (err) {
                     reject(err);
-                }
-                else {
+                } else {
                     resolve(box);
                 }
             });
@@ -61,8 +56,7 @@ export class IMAP {
             this.imap.search(criteria, (err, messages) => {
                 if (err) {
                     reject(err);
-                }
-                else {
+                } else {
                     resolve(messages);
                 }
             });
@@ -70,39 +64,32 @@ export class IMAP {
     }
 
     state() {
-
         return new Promise(async (resolve, reject) => {
-
             if (!navigator.onLine) {
-                reject('No internet Connection')
-            }
-            else if (!this.imap)
-                reject('Please Re-login')
-            else if (this.imap.state == 'authenticated')
+                reject(new Error('No internet Connection'));
+            } else if (!this.imap) {
+                reject(new Error('Please Re-login'));
+            } else if (this.imap.state === 'authenticated') {
                 resolve('authenticated');
-            else {
-
+            } else {
                 try {
                     await this.init();
                     resolve('Reconnected successfully');
-                }
-                catch (err) {
+                } catch (err) {
                     reject(err);
                 }
             }
-        })
+        });
     }
 
     monitor() {
-
         let mailBox = null;
         let criteria = null;
 
         this.monitorId = setInterval(async () => {
-            //  
+            //
             if (this.query) {
-
-                ({ mailBox, criteria } = this.query);
+                ({mailBox, criteria} = this.query);
 
                 try {
                     // Check if the connection is still stable.
@@ -110,17 +97,15 @@ export class IMAP {
 
                     await this.openBox(mailBox);
 
-                    let messages = await this.search(criteria);
+                    const messages = await this.search(criteria);
 
                     console.log(messages);
-                }
-                catch (err) {
+                } catch (err) {
                     // Revoke the query
                     this.query = null;
                     alert(err);
                 }
             }
-
         }, this.delayTime);
     }
 
@@ -129,5 +114,4 @@ export class IMAP {
         this.imap.end();
         console.log('%c---------------------  Close IMAP CONNECTION  --------------------', 'color: Red');
     }
-
 }

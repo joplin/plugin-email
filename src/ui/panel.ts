@@ -1,141 +1,134 @@
 import joplin from 'api';
 import JoplinViewsPanels from 'api/JoplinViewsPanels';
-import { Message, Login, isLogin, isHide, isManualConnection, isLoginScreen, isLoginManually, isSearchByFrom, SearchByFrom } from '../model/message.model'
-import { ImapConfig } from '../model/imapConfig.model';
-import { emailConfigure } from '../core/emailConfigure';
-import { IMAP } from '../core/imap';
+import {Message, Login, isLogin, isHide, isManualConnection, isLoginScreen, isLoginManually, isSearchByFrom, SearchByFrom} from '../model/message.model';
+import {ImapConfig} from '../model/imapConfig.model';
+import {emailConfigure} from '../core/emailConfigure';
+import {IMAP} from '../core/imap';
 
 
 export class Panel {
+    panels: JoplinViewsPanels;
+    view: string;
+    visibility: boolean;
+    account = null;
+    async setupPanel() {
+        if (this.view) {
+            await this.closeOpenPanel();
+            return;
+        }
+        this.panels = joplin.views.panels;
 
-  panels: JoplinViewsPanels;
-  view: string;
-  visibility: boolean
-  account = null;
-  async setupPanel() {
+        this.view = await this.panels.create('panel');
 
-    if (this.view) {
-      await this.closeOpenPanel();
-      return;
+        // Bootstrap v5.1.3.
+        await this.addScript('./ui/style/bootstrap.css');
+        await this.addScript('./ui/style/style.css');
+        await this.addScript('./ui/webview.js');
+
+        // display the login screen
+        await this.loginScreen();
+
+        await this.constructBridge();
     }
-    this.panels = joplin.views.panels;
 
-    this.view = await this.panels.create('panel');
-
-    // Bootstrap v5.1.3.
-    await this.addScript('./ui/style/bootstrap.css');
-    await this.addScript('./ui/style/style.css');
-    await this.addScript('./ui/webview.js');
-
-    // display the login screen
-    await this.loginScreen();
-
-    await this.constructBridge();
-
-  }
-
-  async setHtml(html: string) {
-    await this.panels.setHtml(this.view, html);
-  }
-
-  async addScript(path: string) {
-    await this.panels.addScript(this.view, path);
-  }
-
-  async loginScreen() {
-    await this.setHtml(loginScreen)
-  }
-
-  async closeOpenPanel() {
-    this.visibility = await joplin.views.panels.visible(this.view);
-    await joplin.views.panels.show(this.view, !this.visibility);
-
-  }
-  // establishing a bridge between WebView and a plugin.
-  async constructBridge() {
-    await this.panels.onMessage(this.view, async (message: Message) => {
-      this.bridge(message)
-    });
-  }
-
-  async bridge(message: Message) {
-
-    switch (message !== undefined) {
-      // parsing email & start Imap eonnection
-      case isLogin(message):
-        const imapConfig: ImapConfig = emailConfigure(message as Login);
-
-        // It will alert the user using the manual connection if it can't find an email provider in the email providers list.
-        if (imapConfig) {
-          this.account = new IMAP(imapConfig as ImapConfig);
-
-          // If a connection is established, it will display the main screen and start monitoring waiting for any query.
-          try {
-            await this.account.init();
-            this.setHtml(mainScreen);
-            this.account.monitor();
-          } catch (err) {
-            alert(err);
-            throw new Error(err);
-          }
-
-        } else {
-          alert(`Sorry, an email provider couldn't be found, Please use the manual connection.`)
-        }
-        break;
-
-      case isLoginManually(message):
-
-        this.account = new IMAP(message as ImapConfig);
-
-        // If a connection is established, it will display the main screen and start monitoring waiting for any query.
-        try {
-          await this.account.init();
-          this.setHtml(mainScreen);
-          this.account.monitor();
-        } catch (err) {
-          alert(err);
-          throw new Error(err);
-        }
-        break;
-
-      case isHide(message):
-        this.closeOpenPanel();
-        break;
-
-      case isManualConnection(message):
-        console.log('set Manual Screen');
-        this.setHtml(manualScreen);
-        break;
-
-      case isLoginScreen(message):
-        // close old account connection if any
-        if (this.account)
-          this.account.close(), this.account = null;
-
-        this.loginScreen();
-        break;
-
-      case isSearchByFrom(message):
-        let fromState: Message = message as SearchByFrom;
-
-        if (fromState.state == 'close') {
-          this.account.setQuery({
-            mailBox: 'inbox',
-            criteria: [['FROM', fromState.from]]
-          });
-        }
-        else {
-          this.account.setQuery(null);
-        }
-        break;
+    async setHtml(html: string) {
+        await this.panels.setHtml(this.view, html);
     }
-  }
 
+    async addScript(path: string) {
+        await this.panels.addScript(this.view, path);
+    }
+
+    async loginScreen() {
+        await this.setHtml(loginScreen);
+    }
+
+    async closeOpenPanel() {
+        this.visibility = await joplin.views.panels.visible(this.view);
+        await joplin.views.panels.show(this.view, !this.visibility);
+    }
+    // establishing a bridge between WebView and a plugin.
+    async constructBridge() {
+        await this.panels.onMessage(this.view, async (message: Message) => {
+            this.bridge(message);
+        });
+    }
+
+    async bridge(message: Message) {
+        switch (message !== undefined) {
+        // parsing email & start Imap eonnection
+        case isLogin(message):
+            const imapConfig: ImapConfig = emailConfigure(message as Login);
+
+            // It will alert the user using the manual connection if it can't find an email provider in the email providers list.
+            if (imapConfig) {
+                this.account = new IMAP(imapConfig as ImapConfig);
+
+                // If a connection is established, it will display the main screen and start monitoring waiting for any query.
+                try {
+                    await this.account.init();
+                    this.setHtml(mainScreen);
+                    this.account.monitor();
+                } catch (err) {
+                    alert(err);
+                    throw new Error(err);
+                }
+            } else {
+                alert(`Sorry, an email provider couldn't be found, Please use the manual connection.`);
+            }
+            break;
+
+        case isLoginManually(message):
+
+            this.account = new IMAP(message as ImapConfig);
+
+            // If a connection is established, it will display the main screen and start monitoring waiting for any query.
+            try {
+                await this.account.init();
+                this.setHtml(mainScreen);
+                this.account.monitor();
+            } catch (err) {
+                alert(err);
+                throw new Error(err);
+            }
+            break;
+
+        case isHide(message):
+            this.closeOpenPanel();
+            break;
+
+        case isManualConnection(message):
+            console.log('set Manual Screen');
+            this.setHtml(manualScreen);
+            break;
+
+        case isLoginScreen(message):
+            // close old account connection if any
+            if (this.account) {
+                this.account.close(), this.account = null;
+            }
+
+            this.loginScreen();
+            break;
+
+        case isSearchByFrom(message):
+            const fromState: Message = message as SearchByFrom;
+
+            if (fromState.state === 'close') {
+                this.account.setQuery({
+                    mailBox: 'inbox',
+                    criteria: [['FROM', fromState.from]],
+                });
+            } else {
+                this.account.setQuery(null);
+            }
+            break;
+        }
+    }
 }
 
 
-let loginScreen = `
+const loginScreen = `
 <div class="container">
 
 <div class="row" style="font-size: large;">
@@ -183,9 +176,9 @@ let loginScreen = `
   </div>
 </div>
 </div>
-`
+`;
 
-let manualScreen = `
+const manualScreen = `
 <div class="container">
 
 <div class="row" style="font-size: large;">
@@ -258,8 +251,8 @@ let manualScreen = `
   </div>
 </div>
 </div>
-`
-let mainScreen = `
+`;
+const mainScreen = `
 <div class="container">
 
 <div class="row" style="font-size: large;">
@@ -306,4 +299,4 @@ let mainScreen = `
   </div>
 </div>
 </div>
-`
+`;
