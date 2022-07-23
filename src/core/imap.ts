@@ -43,11 +43,11 @@ export class IMAP {
     }
 
     openBox(mailBox, readOnly = true) {
-        return new Promise((resolve, rejects) => {
+        return new Promise((resolve, reject) => {
 
             this.imap.openBox(mailBox, readOnly, (err, box) => {
                 if (err) {
-                    rejects(err);
+                    reject(err);
                 }
                 else {
                     resolve(box);
@@ -57,10 +57,10 @@ export class IMAP {
     }
 
     search(criteria) {
-        return new Promise((resolve, rejects) => {
+        return new Promise((resolve, reject) => {
             this.imap.search(criteria, (err, messages) => {
                 if (err) {
-                    rejects(err);
+                    reject(err);
                 }
                 else {
                     resolve(messages);
@@ -71,21 +71,24 @@ export class IMAP {
 
     state() {
 
-        return new Promise((resolve, rejects) => {
+        return new Promise(async (resolve, reject) => {
 
             if (!navigator.onLine) {
-                rejects('No internet Connection')
+                reject('No internet Connection')
             }
             else if (!this.imap)
-                rejects('Please Re-login')
+                reject('Please Re-login')
             else if (this.imap.state == 'authenticated')
                 resolve('authenticated');
             else {
-                this.imap.connect().then(() => {
+
+                try {
+                    await this.init();
                     resolve('Reconnected successfully');
-                }, (err: Error) => {
-                    rejects(err);
-                });
+                }
+                catch (err) {
+                    reject(err);
+                }
             }
         })
     }
@@ -101,21 +104,21 @@ export class IMAP {
 
                 ({ mailBox, criteria } = this.query);
 
-                // Check if the connection is still stable.
-                await this.state().then(async () => {
+                try {
+                    // Check if the connection is still stable.
+                    await this.state();
 
-                    await this.openBox(mailBox).then(async () => {
+                    await this.openBox(mailBox);
 
-                        await this.search(criteria).then((messages) => {
-                            console.log(messages);
-                        });
-                    });
+                    let messages = await this.search(criteria);
 
-                }).catch((err) => {
-                    alert(err);
+                    console.log(messages);
+                }
+                catch (err) {
                     // Revoke the query
                     this.query = null;
-                });
+                    alert(err);
+                }
             }
 
         }, this.delayTime);

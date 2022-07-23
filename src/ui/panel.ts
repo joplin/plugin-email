@@ -70,13 +70,14 @@ export class Panel {
           this.account = new IMAP(imapConfig as ImapConfig);
 
           // If a connection is established, it will display the main screen and start monitoring waiting for any query.
-          await this.account.init().then(() => {
+          try {
+            await this.account.init();
             this.setHtml(mainScreen);
             this.account.monitor();
-          }).catch((err) => {
+          } catch (err) {
             alert(err);
             throw new Error(err);
-          });
+          }
 
         } else {
           alert(`Sorry, an email provider couldn't be found, Please use the manual connection.`)
@@ -88,14 +89,14 @@ export class Panel {
         this.account = new IMAP(message as ImapConfig);
 
         // If a connection is established, it will display the main screen and start monitoring waiting for any query.
-        await this.account.init().then(() => {
+        try {
+          await this.account.init();
           this.setHtml(mainScreen);
           this.account.monitor();
-
-        }).catch((err) => {
+        } catch (err) {
           alert(err);
           throw new Error(err);
-        });
+        }
         break;
 
       case isHide(message):
