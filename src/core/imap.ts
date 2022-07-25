@@ -21,12 +21,12 @@ export class IMAP {
     }
 
     init() {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             this.imap.connect();
 
             this.imap.once('ready', ()=> {
                 console.log('%c---------------------  SUCCESSFUL IMAP CONNECTION  --------------------', 'color: Green');
-                resolve(this.imap);
+                resolve();
             });
 
             this.imap.once('error', function(err: Error) {
@@ -40,12 +40,12 @@ export class IMAP {
     }
 
     openBox(mailBox, readOnly = true) {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             this.imap.openBox(mailBox, readOnly, (err, box) => {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(box);
+                    resolve();
                 }
             });
         });
@@ -64,17 +64,18 @@ export class IMAP {
     }
 
     state() {
-        return new Promise(async (resolve, reject) => {
+        return new Promise<void>(async (resolve, reject) => {
             if (!navigator.onLine) {
                 reject(new Error('No internet Connection'));
             } else if (!this.imap) {
                 reject(new Error('Please Re-login'));
             } else if (this.imap.state === 'authenticated') {
-                resolve('authenticated');
+                resolve();
             } else {
                 try {
+                    // Reconnecting
                     await this.init();
-                    resolve('Reconnected successfully');
+                    resolve();
                 } catch (err) {
                     reject(err);
                 }
