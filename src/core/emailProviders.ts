@@ -1,4 +1,4 @@
-import { EmailProvider } from "../model/emailProvider.model";
+import {EmailProvider} from '../model/emailProvider.model';
 
 export const emailProviders: EmailProvider[] = [
 
@@ -49,6 +49,6 @@ export const emailProviders: EmailProvider[] = [
         host: 'imap.yandex.com',
         port: 993,
         tls: true,
-    }
+    },
 
-]
+];
