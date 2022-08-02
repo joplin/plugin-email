@@ -1,5 +1,5 @@
-import { SettingItemType } from 'api/types';
-import { SECTION_NAME, EXPORT_TYPE, ATTACHMENTS } from './constants'
+import {SettingItemType} from 'api/types';
+import {SECTION_NAME, EXPORT_TYPE, ATTACHMENTS} from './constants';
 
 export const setting = {
 
@@ -24,6 +24,6 @@ export const setting = {
         public: true,
         label: 'Include Attachments',
 
-    }
+    },
 
-}
+};
