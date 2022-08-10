@@ -69,3 +69,60 @@ function toggle() {
         document.getElementById('from').readOnly = !readOnly;
     }
 }
+
+function uploadMessages() {
+    webviewApi.postMessage({
+        upload_messages: true,
+    });
+}
+
+function createTag() {
+    const tagElement = document.getElementById('tags');
+    if (tagElement) {
+        return;
+    }
+
+    const divTag = document.getElementById('div-tag');
+
+    const tag = document.createElement('input');
+    tag.classList.add('form-control');
+    tag.placeholder = 'Add a Tag...';
+    tag.id = 'tags';
+
+    divTag.appendChild(tag);
+    new Tagify(tag);
+}
+
+function uploadEMLfiles() {
+    const files = document.getElementById('formFileMultiple').files;
+    const fileListLength = files.length;
+    const notebook = document.getElementById('notebook').value;
+    const tags = document.getElementById('tags');
+
+    if (fileListLength === 0) {
+        alert('Please upload .eml file(s)');
+        return;
+    } else if (!tags) {
+        /* If tags input is not created, that means the user has not selected a notebook yet. */
+        alert('Please Choose a NoteBook');
+        return;
+    }
+
+    // convert an array of type string to an actual array.
+    const tagsList = tags.value !== ''? JSON.parse(tags.value).map((e)=>e.value.toLowerCase()): [];
+
+    // for each eml file.
+    for (let i = 0; i < fileListLength; i++) {
+        const reader = new FileReader();
+        reader.readAsText(files[i]);
+
+        // for each loaded eml file.
+        reader.onload = ()=>{
+            webviewApi.postMessage({
+                eml: reader.result,
+                notebook: [notebook],
+                tags: tagsList,
+            });
+        };
+    }
+}

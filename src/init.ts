@@ -1,6 +1,7 @@
 import joplin from 'api';
 import {ToolbarButtonLocation, MenuItemLocation} from 'api/types';
 import {SECTION_NAME, PLUGIN_ICON} from './constants';
+import {TempFolder} from './core/tempFolder';
 import {setting} from './setting';
 import {Panel} from './ui/panel';
 
@@ -14,6 +15,10 @@ export default class App {
 
         this.panel = new Panel();
         await this.panel.setupPanel();
+
+        /* To delete the previous temp folder and create a temp folder for attachments.*/
+        const tempFolder = new TempFolder();
+        tempFolder.setupTempFolder();
     }
 
     async setupSetting() {
