@@ -74,13 +74,13 @@ export function isUploadMessages(message: any): message is UploadMessages {
 
 export interface EMLtoNote{
     eml: string,
-    notebook: string[],
+    folderId: string,
     tags: string[],
 }
 
 // Type predicates
 export function isEMLtoNote(message: any): message is EMLtoNote {
-    return 'eml' in message && 'notebook' in message && 'tags' in message;
+    return 'eml' in message && 'folderId' in message && 'tags' in message;
 }
 
 export type Message = Login | ManualConnection | Hide | LoginScreen | LoginManually | SearchByFrom | UploadMessages | EMLtoNote;

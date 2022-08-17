@@ -3,8 +3,8 @@ import {Attachment} from '../model/attachment.model';
 import {EmailContent} from '../model/emailContent.model';
 import {EXPORT_TYPE} from '../constants';
 import {Attachments} from './postAttachments';
-import {ExportNoteBody} from '../model/exportNoteBdoy.model';
-import {AttachmentProperties} from 'src/model/attachmentProperties.mode';
+import {ExportNoteProp} from '../model/exportNoteProp.model';
+import {AttachmentProperties} from 'src/model/attachmentProperties.model';
 
 export class PostNote {
     emailHtmlBody: string;
@@ -12,7 +12,7 @@ export class PostNote {
     attachments: Attachment[];
     folders: string[] = [];
     tags: string[] = [];
-    noteBody: ExportNoteBody = {title: '', parent_id: '', body: '', body_html: '', markup_language: 1};
+    noteProp: ExportNoteProp = {title: '', parent_id: '', body: '', body_html: '', markup_language: 1};
 
     async createFolder(folder: string): Promise<void> {
         await joplin.data.post(['folders'], null, {title: folder});
@@ -20,20 +20,6 @@ export class PostNote {
 
     async createTag(tag: string): Promise<void> {
         await joplin.data.post(['tags'], null, {title: tag});
-    }
-
-    async addFolders(folders: string[]): Promise<void> {
-        this.folders = folders;
-        const joplinFolders = await joplin.data.get(['folders']);
-
-        // Search by folder title
-        const joplinFoldersTitles = joplinFolders.items.map((joplinFolder)=> joplinFolder.title);
-
-        const newFolders = folders.filter((folder)=> !joplinFoldersTitles.includes(folder));
-
-        newFolders.forEach(async (folder)=>{
-            await this.createFolder(folder);
-        });
     }
 
     async addTags(tags: string[]): Promise<void> {
@@ -50,9 +36,7 @@ export class PostNote {
         });
     }
 
-    async post(emailContent: EmailContent, folders: string[], tags: string []): Promise<void> {
-        if (folders.length === 0) return;
-
+    async post(emailContent: EmailContent, folderId: string, tags: string []): Promise<void> {
         this.attachments = emailContent.attachments;
         this.subject = emailContent.subject;
 
@@ -60,37 +44,28 @@ export class PostNote {
         this.emailHtmlBody = new DOMParser().parseFromString(emailContent.html, 'text/html').body.innerHTML;
 
         // Converting email to (html, markdown, text) depends on what export type is in the plugin settings.
-        await this.converter();
+        await this.convert();
 
-        await this.addFolders(folders);
         await this.addTags(tags);
 
-        const joplinFolders = await joplin.data.get(['folders']);
         const joplinTags = await joplin.data.get(['tags']);
-
-        const emailFolders = joplinFolders.items.filter((e)=>{
-            return this.folders.includes(e.title);
-        });
 
         const emailTags = joplinTags.items.filter((e)=>{
             return this.tags.includes(e.title);
         });
 
-        for (let i = 0; i < emailFolders.length; i++) {
-            const folder = emailFolders[i];
-            this.noteBody['parent_id'] = folder.id;
+        this.noteProp['parent_id'] = folderId;
+        const note = await joplin.data.post(['notes'], null, this.noteProp);
 
-            const note = await joplin.data.post(['notes'], null, this.noteBody);
-
-            for (let j= 0; j< emailTags.length; j++) {
-                const tag = emailTags[j];
-                await joplin.data.post(['tags', tag.id, 'notes'], null, {id: note.id});
-            }
+        // assign the tags for the note.
+        for (let j = 0; j < emailTags.length; j++) {
+            const tag = emailTags[j];
+            await joplin.data.post(['tags', tag.id, 'notes'], null, {id: note.id});
         }
     }
 
 
-    async converter() {
+    async convert() {
         const exportType = await joplin.settings.value(EXPORT_TYPE);
         if (exportType === 'HTML') {
             const postAttachments = new Attachments(this.attachments);
@@ -99,9 +74,9 @@ export class PostNote {
             // Replace each attachment img src with the ID of the attachment location in Joplin resources.
             await this.addInlineAttachments(attachmentsProp);
 
-            this.noteBody['title'] = this.subject;
-            this.noteBody['body'] = this.emailHtmlBody;
-            this.noteBody['markup_language'] = 2;
+            this.noteProp['title'] = this.subject;
+            this.noteProp['body'] = this.emailHtmlBody;
+            this.noteProp['markup_language'] = 2;
         } else if (exportType === 'Markdown') {
             const postAttachments = new Attachments(this.attachments);
             const attachmentsProp: AttachmentProperties[] = await postAttachments.postAttachments();
@@ -109,10 +84,10 @@ export class PostNote {
             // Replace each attachment img src with the ID of the attachment location in Joplin resources.
             await this.addInlineAttachments(attachmentsProp);
 
-            this.noteBody['title'] = this.subject;
-            this.noteBody['body_html'] = this.emailHtmlBody;
+            this.noteProp['title'] = this.subject;
+            this.noteProp['body_html'] = this.emailHtmlBody;
         } else if (exportType === 'Text') {
-            this.noteBody['title'] = this.subject;
+            this.noteProp['title'] = this.subject;
 
             const domParser = new DOMParser();
             const dom: Document = domParser.parseFromString(this.emailHtmlBody, 'text/html');
@@ -122,7 +97,7 @@ export class PostNote {
             while (images.length > 0) {
                 images[0].parentNode.removeChild(images[0]);
             }
-            this.noteBody['body_html'] = dom.body.innerHTML;
+            this.noteProp['body_html'] = dom.body.innerHTML;
         }
     }
 

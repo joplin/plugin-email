@@ -3,15 +3,16 @@ import {ImapConfig} from '../model/imapConfig.model';
 import {Query} from '../model/Query.model';
 import joplin from 'api';
 import {CONVERTED_MESSAGES} from '../constants';
-import {PostNote} from './postNote';
-import EmailParser from './emailParser';
-import {EmailContent} from '../model/emailContent.model';
 
 export class IMAP {
-    private imap = null;
+    private imap: Imap = null;
     private monitorId = null;
     private query: Query = null;
     private delayTime = 1000 * 5;
+    private user: string;
+
+    // Stores converted messages id.
+    private uids: number[] = [];
 
     // To check if there is a query not completed yet.
     private pending = false;
@@ -26,14 +27,28 @@ export class IMAP {
             },
 
         });
+        this.user = config.user;
     }
 
     init() {
         return new Promise<void>((resolve, reject) => {
             this.imap.connect();
 
-            this.imap.once('ready', ()=> {
+            this.imap.once('ready', async ()=> {
                 console.log('%c---------------------  SUCCESSFUL IMAP CONNECTION  --------------------', 'color: Green');
+
+                const value = await joplin.settings.value(CONVERTED_MESSAGES);
+                const email = this.user;
+
+                if (!(email in value)) {
+                    value[email] = {
+                        ['from']: [],
+                    };
+                    await joplin.settings.setValue(CONVERTED_MESSAGES, value);
+                }
+
+                // get the last converted messages id.
+                this.uids = value[email]['from'];
                 resolve();
             });
 
@@ -47,9 +62,9 @@ export class IMAP {
         this.query = query;
     }
 
-    openBox(mailBox, readOnly = true) {
+    openBox(mailBox: string, readOnly = true) {
         return new Promise<void>((resolve, reject) => {
-            this.imap.openBox(mailBox, readOnly, (err, box) => {
+            this.imap.openBox(mailBox, readOnly, (err: Error, box: Imap.Box) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -59,13 +74,13 @@ export class IMAP {
         });
     }
 
-    search(criteria): Promise<number[]> {
-        return new Promise((resolve, reject) => {
-            this.imap.search(criteria, (err, messages) => {
+    search(criteria: any[]) {
+        return new Promise<number[]>((resolve, reject) => {
+            this.imap.search(criteria, (err: Error, uids: number[]) => {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(messages);
+                    resolve(uids);
                 }
             });
         });
@@ -91,23 +106,23 @@ export class IMAP {
         });
     }
 
-    fetchAll(messages: number[], structure: object) {
+    fetchAll(messages: number[], options: Imap.FetchOptions) {
         return new Promise<string[]>((resolve, reject) => {
-            const fetch = this.imap.fetch(messages, structure);
+            const fetch = this.imap.fetch(messages, options);
             const convertedMessages: string[] = [];
 
             // For each message
-            fetch.on('message', (message, seqno) => {
+            fetch.on('message', (message: Imap.ImapMessage, seqno: number) => {
                 let data = '';
 
-                message.on('body', (stream) => {
-                    stream.on('data', function(chunk) {
+                message.on('body', (stream: NodeJS.ReadableStream) => {
+                    stream.on('data', function(chunk: NodeJS.ReadableStream) {
                         // push data
                         data += chunk;
                     });
                 });
 
-                message.once('end', async () => {
+                message.once('end', () => {
                     convertedMessages.push(data);
                 });
             });
@@ -123,39 +138,12 @@ export class IMAP {
         });
     }
 
-    newMessages(messages: number[]): Promise<number[]> {
-        return new Promise(async (resolve, reject)=>{
-            if (messages.length === 0) {
-                return resolve([]);
-            }
 
+    updateConvertedMessages(newMessages: number[]) {
+        return new Promise<void>(async (resolve, reject)=>{
             try {
                 const value = await joplin.settings.value(CONVERTED_MESSAGES);
-                const email = this.imap._config.user;
-
-                // Each email has a list of messages ids, which have been converted to notes before.
-                if (!(email in value)) {
-                    value[email] = {
-                        ['from']: [],
-                    };
-                    await joplin.settings.setValue(CONVERTED_MESSAGES, value);
-                }
-
-                const converted = value[email]['from'];
-                const newMessages = messages.filter((x) => !converted.includes(x));
-
-                return resolve(newMessages);
-            } catch (err) {
-                return reject(err);
-            }
-        });
-    }
-
-    updateConvertedMessages(newMessages: number[]): Promise<void> {
-        return new Promise(async (resolve, reject)=>{
-            try {
-                const value = await joplin.settings.value(CONVERTED_MESSAGES);
-                const email = this.imap._config.user;
+                const email = this.user;
 
                 value[email]['from'].push(...newMessages);
                 await joplin.settings.setValue(CONVERTED_MESSAGES, value);
@@ -167,13 +155,9 @@ export class IMAP {
     }
 
     monitor() {
-        let mailBox = null;
-        let criteria = null;
-
         this.monitorId = setInterval(async () => {
-            //
             if (this.query) {
-                ({mailBox, criteria} = this.query);
+                const {mailBox, criteria} = this.query;
 
                 try {
                     // Check if the connection is still stable.
@@ -182,25 +166,22 @@ export class IMAP {
                     await this.openBox(mailBox);
 
                     const messages = await this.search(criteria);
+                    const newMessages : number[] = messages.filter((m) => ! this.uids.includes(m));
 
-                    const newMessages = await this.newMessages(messages);
-
-                    console.log(newMessages);
+                    console.log(newMessages, 'new Messages');
 
                     if (newMessages.length && !this.pending) {
                         this.pending = true;
                         const data = await this.fetchAll(newMessages, {bodies: ''});
 
                         for (let i = 0; i < data.length; i++) {
-                            const email = new EmailParser();
-                            const emailContent: EmailContent = await email.parse(data[i]);
+                            // post email
 
-                            // for test
-                            const note = new PostNote();
-                            await note.post(emailContent, ['joplin'], []);
                         }
-                        /* to save the id of converted messages */
+                        // to save the id of converted messages.
                         await this.updateConvertedMessages(newMessages);
+                        this.uids.push(...newMessages);
+
                         this.pending = false;
                     }
                 } catch (err) {

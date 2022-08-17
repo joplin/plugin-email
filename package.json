@@ -34,6 +34,7 @@
     "yargs": "^16.2.0"
   },
   "dependencies": {
+    "@types/imap": "^0.8.35",
     "imap": "^0.8.19",
     "net": "^1.0.2",
     "postal-mime": "^1.0.13",

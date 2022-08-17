@@ -13,16 +13,12 @@ export default class EmailParser extends postalMime {
         // A message is invalid if it starts with a space.
         message = message.trim();
 
-        try {
-            this.emailContent = await super.parse(message);
-            this.emailContent.subject = this.subject;
-            this.emailContent.html = this.html;
-            this.emailContent.attachments = this.emailContent.attachments;
+        this.emailContent = await super.parse(message);
+        this.emailContent.subject = this.subject;
+        this.emailContent.html = this.html;
+        this.emailContent.attachments = this.emailContent.attachments;
 
-            return (this.emailContent);
-        } catch (err) {
-            throw err;
-        }
+        return (this.emailContent);
     }
 
     get subject() {

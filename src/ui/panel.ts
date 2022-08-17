@@ -137,13 +137,13 @@ export class Panel {
             await this.setHtml(screen);
             break;
         case isEMLtoNote(message):
-            const {eml, tags, notebook} = message as EMLtoNote;
+            const {eml, tags, folderId} = message as EMLtoNote;
             try {
                 const parser = new EmailParser();
                 const messagePror:EmailContent = await parser.parse(eml);
 
                 const note = new PostNote();
-                await note.post(messagePror, notebook, tags);
+                await note.post(messagePror, folderId, tags);
             } catch (err) {
                 alert(err);
                 throw err;
@@ -344,15 +344,29 @@ function mainScreen(email: string): string {
 }
 
 async function uploadMessagesScreen() {
-    let joplinFolders = await joplin.data.get(['folders']);
+    const joplinFolders = await joplin.data.get(['folders']);
 
-    // folder title
-    joplinFolders = joplinFolders.items.map((JF)=> JF.title);
+    const folders = [];
+
+    for (let i = 0; i < joplinFolders.items.length; i++) {
+        const folder = joplinFolders.items[i];
+        let path = folder.title;
+        let node = folder;
+        const id = folder.id;
+
+        // The parent folder path
+        while (node.parent_id !== '') {
+            node = await joplin.data.get(['folders', node.parent_id]);
+            path = `${node.title}/${path}`;
+        }
+
+        folders.push({path: path, id: id});
+    }
 
     const options = [];
 
-    joplinFolders.forEach((title: string) => {
-        const option = `<option value="${title}">${title}</option>`;
+    folders.forEach((folder) => {
+        const option = `<option value="${folder.id}">${folder.path}</option>`;
         options.push(option);
     });
 

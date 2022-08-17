@@ -96,7 +96,7 @@ function createTag() {
 function uploadEMLfiles() {
     const files = document.getElementById('formFileMultiple').files;
     const fileListLength = files.length;
-    const notebook = document.getElementById('notebook').value;
+    const folderId = document.getElementById('notebook').value;
     const tags = document.getElementById('tags');
 
     if (fileListLength === 0) {
@@ -120,7 +120,7 @@ function uploadEMLfiles() {
         reader.onload = ()=>{
             webviewApi.postMessage({
                 eml: reader.result,
-                notebook: [notebook],
+                folderId: folderId,
                 tags: tagsList,
             });
         };

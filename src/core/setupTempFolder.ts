@@ -1,16 +1,16 @@
 import {tmpdir} from 'os';
-import {sep} from 'path';
+import * as path from 'path';
 import joplin from 'api';
 const fs = joplin.require('fs-extra');
 
 
-export class TempFolder {
+export class SetupTempFolder {
     tempFolder: string;
     constructor() {
-        this.tempFolder = `${tmpdir}${sep}joplin-email-plugin${sep}`;
+        this.tempFolder = path.join(tmpdir(), 'joplin-email-plugin');
     }
 
-    setupTempFolder() {
+    create() {
         try {
             fs.rmdirSync(this.tempFolder, {recursive: true});
             fs.mkdirSync(this.tempFolder, {recursive: true});
