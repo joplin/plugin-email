@@ -93,7 +93,22 @@ function createTag() {
     new Tagify(tag);
 }
 
-function uploadEMLfiles() {
+async function readFile(file) {
+    return new Promise((resolve, reject)=>{
+        const reader = new FileReader();
+        reader.readAsText(file);
+
+        reader.onload = ()=>{
+            resolve(reader.result);
+        };
+
+        reader.onerror = (err)=>{
+            reject(err);
+        };
+    });
+}
+
+async function uploadEMLfiles() {
     const files = document.getElementById('formFileMultiple').files;
     const fileListLength = files.length;
     const folderId = document.getElementById('notebook').value;
@@ -110,19 +125,17 @@ function uploadEMLfiles() {
 
     // convert an array of type string to an actual array.
     const tagsList = tags.value !== ''? JSON.parse(tags.value).map((e)=>e.value.toLowerCase()): [];
+    const emlFiles = [];
 
     // for each eml file.
     for (let i = 0; i < fileListLength; i++) {
-        const reader = new FileReader();
-        reader.readAsText(files[i]);
-
-        // for each loaded eml file.
-        reader.onload = ()=>{
-            webviewApi.postMessage({
-                eml: reader.result,
-                folderId: folderId,
-                tags: tagsList,
-            });
-        };
+        const emlFile = await readFile(files[i]);
+        emlFiles.push(emlFile);
     }
+
+    webviewApi.postMessage({
+        emlFiles: emlFiles,
+        folderId: folderId,
+        tags: tagsList,
+    });
 }

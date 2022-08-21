@@ -1,18 +1,13 @@
 import * as Imap from 'imap';
 import {ImapConfig} from '../model/imapConfig.model';
 import {Query} from '../model/Query.model';
-import joplin from 'api';
-import {CONVERTED_MESSAGES} from '../constants';
+import {SetupTempFolder} from './setupTempFolder';
 
 export class IMAP {
     private imap: Imap = null;
     private monitorId = null;
     private query: Query = null;
     private delayTime = 1000 * 5;
-    private user: string;
-
-    // Stores converted messages id.
-    private uids: number[] = [];
 
     // To check if there is a query not completed yet.
     private pending = false;
@@ -27,7 +22,6 @@ export class IMAP {
             },
 
         });
-        this.user = config.user;
     }
 
     init() {
@@ -36,19 +30,6 @@ export class IMAP {
 
             this.imap.once('ready', async ()=> {
                 console.log('%c---------------------  SUCCESSFUL IMAP CONNECTION  --------------------', 'color: Green');
-
-                const value = await joplin.settings.value(CONVERTED_MESSAGES);
-                const email = this.user;
-
-                if (!(email in value)) {
-                    value[email] = {
-                        ['from']: [],
-                    };
-                    await joplin.settings.setValue(CONVERTED_MESSAGES, value);
-                }
-
-                // get the last converted messages id.
-                this.uids = value[email]['from'];
                 resolve();
             });
 
@@ -62,7 +43,7 @@ export class IMAP {
         this.query = query;
     }
 
-    openBox(mailBox: string, readOnly = true) {
+    openBox(mailBox: string, readOnly = false) {
         return new Promise<void>((resolve, reject) => {
             this.imap.openBox(mailBox, readOnly, (err: Error, box: Imap.Box) => {
                 if (err) {
@@ -138,23 +119,20 @@ export class IMAP {
         });
     }
 
-
-    updateConvertedMessages(newMessages: number[]) {
+    markAsSeen(messages: number[]) {
         return new Promise<void>(async (resolve, reject)=>{
-            try {
-                const value = await joplin.settings.value(CONVERTED_MESSAGES);
-                const email = this.user;
-
-                value[email]['from'].push(...newMessages);
-                await joplin.settings.setValue(CONVERTED_MESSAGES, value);
-                resolve();
-            } catch (err) {
-                return reject(err);
-            }
+            this.imap.addFlags(messages, ['SEEN'], (err)=>{
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
         });
     }
 
     monitor() {
+        let setupTempFolder: SetupTempFolder = null;
         this.monitorId = setInterval(async () => {
             if (this.query) {
                 const {mailBox, criteria} = this.query;
@@ -165,28 +143,30 @@ export class IMAP {
 
                     await this.openBox(mailBox);
 
-                    const messages = await this.search(criteria);
-                    const newMessages : number[] = messages.filter((m) => ! this.uids.includes(m));
-
+                    const newMessages = await this.search(criteria);
                     console.log(newMessages, 'new Messages');
 
                     if (newMessages.length && !this.pending) {
                         this.pending = true;
-                        const data = await this.fetchAll(newMessages, {bodies: ''});
 
+                        setupTempFolder = new SetupTempFolder();
+                        setupTempFolder.createTempFolder();
+
+                        const data = await this.fetchAll(newMessages, {bodies: ''});
+                        await this.markAsSeen(newMessages);
                         for (let i = 0; i < data.length; i++) {
                             // post email
 
                         }
-                        // to save the id of converted messages.
-                        await this.updateConvertedMessages(newMessages);
-                        this.uids.push(...newMessages);
-
+                        setupTempFolder.removeTempFolder();
                         this.pending = false;
                     }
                 } catch (err) {
                     // Revoke the query
                     this.query = null;
+                    if (setupTempFolder) {
+                        setupTempFolder.removeTempFolder();
+                    }
                     alert(err);
                     throw err;
                 }

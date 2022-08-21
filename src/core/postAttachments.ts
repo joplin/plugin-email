@@ -1,4 +1,3 @@
-import {tmpdir} from 'os';
 import * as path from 'path';
 import joplin from 'api';
 import {Attachment} from '../model/attachment.model';
@@ -6,17 +5,18 @@ import {AttachmentProperties} from '../model/attachmentProperties.model';
 const fs = joplin.require('fs-extra');
 
 export class Attachments {
-    tempFolder: string = path.join(tmpdir(), 'joplin-email-plugin');
+    tempFolderPath: string;
     attachments: Attachment[];
 
-    constructor(attachments: Attachment[]) {
+    constructor(attachments: Attachment[], tempFolderPath: string) {
         this.attachments = attachments.filter((e: Attachment)=>e.filename !== '');
+        this.tempFolderPath = tempFolderPath;
     }
 
 
     async postAttachments(): Promise<AttachmentProperties[]> {
         const attachmentsProp: AttachmentProperties[] = [];
-        const tempFolder = this.tempFolder;
+        const tempFolder = this.tempFolderPath;
 
         try {
             // for each attachment will create an actual file of the attachment and posting to Joplin.

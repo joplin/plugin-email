@@ -1,4 +1,4 @@
-export interface ExportNoteProp{
+export interface ExportNote{
     title: string,
     parent_id:string,
     body?: string,

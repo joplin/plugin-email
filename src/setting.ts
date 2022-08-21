@@ -1,5 +1,5 @@
 import {SettingItemType} from 'api/types';
-import {SECTION_NAME, EXPORT_TYPE, ATTACHMENTS, CONVERTED_MESSAGES} from './constants';
+import {SECTION_NAME, EXPORT_TYPE, ATTACHMENTS} from './constants';
 
 export const setting = {
 
@@ -24,13 +24,6 @@ export const setting = {
         public: true,
         label: 'Include Attachments',
 
-    },
-
-    [CONVERTED_MESSAGES]: {
-        value: {},
-        type: SettingItemType.Object,
-        public: false,
-        label: 'Converted Messages',
     },
 
 };

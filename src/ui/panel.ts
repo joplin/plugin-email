@@ -7,6 +7,8 @@ import {IMAP} from '../core/imap';
 import {PostNote} from '../core/postNote';
 import EmailParser from '../core/emailParser';
 import {EmailContent} from '../model/emailContent.model';
+import {SetupTempFolder} from '../core/setupTempFolder';
+import {JopinFolders} from '../model/joplinFolders.model';
 
 export class Panel {
     panels: JoplinViewsPanels;
@@ -124,7 +126,7 @@ export class Panel {
             if (fromState.state === 'close') {
                 this.account.setQuery({
                     mailBox: 'inbox',
-                    criteria: [['FROM', fromState.from]],
+                    criteria: [['FROM', fromState.from], 'UNSEEN'],
                 });
                 await this.setHtml(mainScreen(fromState.from));
             } else {
@@ -137,14 +139,26 @@ export class Panel {
             await this.setHtml(screen);
             break;
         case isEMLtoNote(message):
-            const {eml, tags, folderId} = message as EMLtoNote;
-            try {
-                const parser = new EmailParser();
-                const messagePror:EmailContent = await parser.parse(eml);
+            const {emlFiles, tags, folderId} = message as EMLtoNote;
+            let setupTempFolder: SetupTempFolder = null;
 
-                const note = new PostNote();
-                await note.post(messagePror, folderId, tags);
+            try {
+                setupTempFolder = new SetupTempFolder();
+                setupTempFolder.createTempFolder();
+                const tempFolderPath = setupTempFolder.tempFolderPath;
+
+                for (let i = 0; i < emlFiles.length; i++) {
+                    const parser = new EmailParser();
+                    const messagePror:EmailContent = await parser.parse(emlFiles[i]);
+                    const note = new PostNote();
+                    await note.post(messagePror, tempFolderPath, folderId, tags);
+                }
+
+                setupTempFolder.removeTempFolder();
             } catch (err) {
+                if (setupTempFolder) {
+                    setupTempFolder.removeTempFolder();
+                }
                 alert(err);
                 throw err;
             }
@@ -344,24 +358,26 @@ function mainScreen(email: string): string {
 }
 
 async function uploadMessagesScreen() {
-    const joplinFolders = await joplin.data.get(['folders']);
-
+    let joplinFolders: JopinFolders;
     const folders = [];
 
-    for (let i = 0; i < joplinFolders.items.length; i++) {
-        const folder = joplinFolders.items[i];
-        let path = folder.title;
-        let node = folder;
-        const id = folder.id;
+    do {
+        joplinFolders = await joplin.data.get(['folders']);
 
-        // The parent folder path
-        while (node.parent_id !== '') {
-            node = await joplin.data.get(['folders', node.parent_id]);
-            path = `${node.title}/${path}`;
+        for (let i = 0; i < joplinFolders.items.length; i++) {
+            const folder = joplinFolders.items[i];
+            let path = folder.title;
+            let node = folder;
+            const id = folder.id;
+
+            // The parent folder path
+            while (node.parent_id !== '') {
+                node = await joplin.data.get(['folders', node.parent_id]);
+                path = `${node.title}/${path}`;
+            }
+            folders.push({path: path, id: id});
         }
-
-        folders.push({path: path, id: id});
-    }
+    } while (joplinFolders.has_more);
 
     const options = [];
 
