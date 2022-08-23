@@ -69,3 +69,73 @@ function toggle() {
         document.getElementById('from').readOnly = !readOnly;
     }
 }
+
+function uploadMessages() {
+    webviewApi.postMessage({
+        upload_messages: true,
+    });
+}
+
+function createTag() {
+    const tagElement = document.getElementById('tags');
+    if (tagElement) {
+        return;
+    }
+
+    const divTag = document.getElementById('div-tag');
+
+    const tag = document.createElement('input');
+    tag.classList.add('form-control');
+    tag.placeholder = 'Add a Tag...';
+    tag.id = 'tags';
+
+    divTag.appendChild(tag);
+    new Tagify(tag);
+}
+
+async function readFile(file) {
+    return new Promise((resolve, reject)=>{
+        const reader = new FileReader();
+        reader.readAsText(file);
+
+        reader.onload = ()=>{
+            resolve(reader.result);
+        };
+
+        reader.onerror = (err)=>{
+            reject(err);
+        };
+    });
+}
+
+async function uploadEMLfiles() {
+    const files = document.getElementById('formFileMultiple').files;
+    const fileListLength = files.length;
+    const folderId = document.getElementById('notebook').value;
+    const tags = document.getElementById('tags');
+
+    if (fileListLength === 0) {
+        alert('Please upload .eml file(s)');
+        return;
+    } else if (!tags) {
+        /* If tags input is not created, that means the user has not selected a notebook yet. */
+        alert('Please Choose a NoteBook');
+        return;
+    }
+
+    // convert an array of type string to an actual array.
+    const tagsList = tags.value !== ''? JSON.parse(tags.value).map((e)=>e.value.toLowerCase()): [];
+    const emlFiles = [];
+
+    // for each eml file.
+    for (let i = 0; i < fileListLength; i++) {
+        const emlFile = await readFile(files[i]);
+        emlFiles.push(emlFile);
+    }
+
+    webviewApi.postMessage({
+        emlFiles: emlFiles,
+        folderId: folderId,
+        tags: tagsList,
+    });
+}

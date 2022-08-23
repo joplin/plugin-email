@@ -1,10 +1,14 @@
 import joplin from 'api';
 import JoplinViewsPanels from 'api/JoplinViewsPanels';
-import {Message, Login, isLogin, isHide, isManualConnection, isLoginScreen, isLoginManually, isSearchByFrom, SearchByFrom} from '../model/message.model';
+import {Message, Login, isLogin, isHide, isManualConnection, isLoginScreen, isLoginManually, isSearchByFrom, SearchByFrom, isUploadMessages, isEMLtoNote, EMLtoNote} from '../model/message.model';
 import {ImapConfig} from '../model/imapConfig.model';
 import {emailConfigure} from '../core/emailConfigure';
 import {IMAP} from '../core/imap';
-
+import {PostNote} from '../core/postNote';
+import EmailParser from '../core/emailParser';
+import {EmailContent} from '../model/emailContent.model';
+import {SetupTempFolder} from '../core/setupTempFolder';
+import {JopinFolders} from '../model/joplinFolders.model';
 
 export class Panel {
     panels: JoplinViewsPanels;
@@ -23,6 +27,11 @@ export class Panel {
         // Bootstrap v5.1.3.
         await this.addScript('./ui/style/bootstrap.css');
         await this.addScript('./ui/style/style.css');
+
+        // for tags input style
+        await this.addScript('./ui/style/tagify.css');
+        await this.addScript('./ui/style/tagify.js');
+
         await this.addScript('./ui/webview.js');
 
         // display the login screen
@@ -67,7 +76,7 @@ export class Panel {
                 // If a connection is established, it will display the main screen and start monitoring waiting for any query.
                 try {
                     await this.account.init();
-                    this.setHtml(mainScreen);
+                    await this.setHtml(mainScreen(null));
                     this.account.monitor();
                 } catch (err) {
                     alert(err);
@@ -85,7 +94,7 @@ export class Panel {
             // If a connection is established, it will display the main screen and start monitoring waiting for any query.
             try {
                 await this.account.init();
-                this.setHtml(mainScreen);
+                await this.setHtml(mainScreen(null));
                 this.account.monitor();
             } catch (err) {
                 alert(err);
@@ -99,7 +108,7 @@ export class Panel {
 
         case isManualConnection(message):
             console.log('set Manual Screen');
-            this.setHtml(manualScreen);
+            await this.setHtml(manualScreen);
             break;
 
         case isLoginScreen(message):
@@ -117,10 +126,41 @@ export class Panel {
             if (fromState.state === 'close') {
                 this.account.setQuery({
                     mailBox: 'inbox',
-                    criteria: [['FROM', fromState.from]],
+                    criteria: [['FROM', fromState.from], 'UNSEEN'],
                 });
+                await this.setHtml(mainScreen(fromState.from));
             } else {
                 this.account.setQuery(null);
+                await this.setHtml(mainScreen(null));
+            }
+            break;
+        case isUploadMessages(message):
+            const screen = await uploadMessagesScreen();
+            await this.setHtml(screen);
+            break;
+        case isEMLtoNote(message):
+            const {emlFiles, tags, folderId} = message as EMLtoNote;
+            let setupTempFolder: SetupTempFolder = null;
+
+            try {
+                setupTempFolder = new SetupTempFolder();
+                setupTempFolder.createTempFolder();
+                const tempFolderPath = setupTempFolder.tempFolderPath;
+
+                for (let i = 0; i < emlFiles.length; i++) {
+                    const parser = new EmailParser();
+                    const messagePror:EmailContent = await parser.parse(emlFiles[i]);
+                    const note = new PostNote();
+                    await note.post(messagePror, tempFolderPath, folderId, tags);
+                }
+
+                setupTempFolder.removeTempFolder();
+            } catch (err) {
+                if (setupTempFolder) {
+                    setupTempFolder.removeTempFolder();
+                }
+                alert(err);
+                throw err;
             }
             break;
         }
@@ -162,7 +202,10 @@ const loginScreen = `
         <br>
 
         <div class="container" style="text-align: center;">
-          <button type="button" class="btn btn-outline-info" style="width: 75%; font-size: large;" onclick="manualConnection()">Manually connect to IMAP</button>
+          <button type="button" class="btn btn-outline-info" style="width: 75%; font-size: large;" onclick="manualConnection()">Manually connect to IMAP</button>   
+          <br>
+          <br>
+          <button type="button" class="btn btn-outline-success" style="width: 75%; font-size: large;" onclick="uploadMessages()">Convert Saved Messages</button>
         </div>
 
         <hr class="my-4">
@@ -252,7 +295,19 @@ const manualScreen = `
 </div>
 </div>
 `;
-const mainScreen = `
+
+function mainScreen(email: string): string {
+    let from = '';
+    let readOnly = '';
+    let checked = '';
+
+    if (email) {
+        from = email;
+        readOnly = 'readOnly';
+        checked = 'checked';
+    }
+
+    return `
 <div class="container">
 
 <div class="row" style="font-size: large;">
@@ -270,12 +325,12 @@ const mainScreen = `
           <div class="input-group mb-3">
             <span class="input-group-text" id="basic-addon1">From</span>
             <input type="email" class="form-control" placeholder="email" aria-label="Email"
-              aria-describedby="basic-addon1" id='from' required>
+              aria-describedby="basic-addon1" id='from' value = "${from}" ${readOnly} required>
           </div>
           <div class="container" style="text-align: center">
             <div class="form-check form-switch">
               <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked"
-                onchange="toggle()">
+                onchange="toggle()" ${checked}>
               <label class="form-check-label" for="flexSwitchCheckChecked">Fetching & Monitoring</label>
             </div>
           </div>
@@ -300,3 +355,93 @@ const mainScreen = `
 </div>
 </div>
 `;
+}
+
+async function uploadMessagesScreen() {
+    let joplinFolders: JopinFolders;
+    const folders = [];
+
+    do {
+        joplinFolders = await joplin.data.get(['folders']);
+
+        for (let i = 0; i < joplinFolders.items.length; i++) {
+            const folder = joplinFolders.items[i];
+            let path = folder.title;
+            let node = folder;
+            const id = folder.id;
+
+            // The parent folder path
+            while (node.parent_id !== '') {
+                node = await joplin.data.get(['folders', node.parent_id]);
+                path = `${node.title}/${path}`;
+            }
+            folders.push({path: path, id: id});
+        }
+    } while (joplinFolders.has_more);
+
+    const options = [];
+
+    folders.forEach((folder) => {
+        const option = `<option value="${folder.id}">${folder.path}</option>`;
+        options.push(option);
+    });
+
+    return `
+<div class="container">
+
+<div class="row" style="font-size: large;">
+
+  <div class="col-md-9 col-lg-7 col-xl-5 mx-auto">
+
+    <div class="card border-0 shadow rounded-3 my-5" style="opacity: 0.97; top: 100px;">
+
+      <div class="card-body p-4 p-sm-5">
+
+        <h1 class="card-title text-center mb-3 fw-light fs-1">Upload .eml Files</h1>
+
+        <br>
+
+        <div class="container" style="text-align: center;">
+
+          <div class="mb-3">
+            <input class="form-control" type="file" id="formFileMultiple" accept=".eml" multiple>
+          </div>
+
+          <div class="input-group mb-3">
+          <span class="input-group-text" id="basic-addon1"> NoteBooks :</span>
+
+          <select class="form-select" aria-label="Default select example" id = 'notebook' onchange="createTag()">
+            <option disabled selected value >Open this select notebooks</option>
+            ${options}
+          </select>
+          
+          </div>
+
+          <div  class="input-group mb-3" id='div-tag'>
+
+          </div>
+
+          <button id="btn" class="btn btn-outline-success btn-login text-uppercase fw-bold" type="submit"  onclick="uploadEMLfiles()" style="width: 75%; font-size:large;">Convert</button>
+
+        </div>
+
+        <br>
+
+        <div class="container" style="text-align: center;">
+          <button type="button" class="btn btn-outline-info" style="width: 75%; font-size: large;"
+            onclick="loginScreen()">Login Screen</button>
+        </div>
+
+        <hr class="my-4">
+
+        <div class="container" style="text-align: center;">
+          <button type="button" class="btn btn-outline-danger" onclick="hide()">Close</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+`;
+}

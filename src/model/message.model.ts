@@ -63,4 +63,24 @@ export function isSearchByFrom(message: any): message is SearchByFrom {
     }
 }
 
-export type Message = Login | ManualConnection | Hide | LoginScreen | LoginManually | SearchByFrom;
+export interface UploadMessages{
+    upload_messages: boolean,
+}
+
+// Type predicates
+export function isUploadMessages(message: any): message is UploadMessages {
+    return 'upload_messages' in message;
+}
+
+export interface EMLtoNote{
+    emlFiles: string[],
+    folderId: string,
+    tags: string[],
+}
+
+// Type predicates
+export function isEMLtoNote(message: any): message is EMLtoNote {
+    return 'emlFiles' in message && 'folderId' in message && 'tags' in message;
+}
+
+export type Message = Login | ManualConnection | Hide | LoginScreen | LoginManually | SearchByFrom | UploadMessages | EMLtoNote;
