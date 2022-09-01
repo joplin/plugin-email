@@ -1,19 +1,28 @@
+import joplin from 'api';
 import * as Imap from 'imap';
-import {ImapConfig} from '../model/imapConfig.model';
+import {ATTACHMENTS, ATTACHMENTS_STYLE, EXPORT_TYPE} from '../constants';
+import {ExportCriteria} from '../model/exportCriteria.model';
+import {PostCriteria} from '../model/postCriteria.model';
 import {Query} from '../model/Query.model';
+import EmailParser from './emailParser';
+import {PostNote} from './postNote';
 import {SetupTempFolder} from './setupTempFolder';
 
 export class IMAP {
     private imap: Imap = null;
     private monitorId = null;
-    private query: Query = null;
+    private fromMonitoring: Query = null;
+    private mailBoxMonitoring = null;
+    private switcher = 1;
     private delayTime = 1000 * 5;
+    private accountConfig: Imap.Config;
 
     // To check if there is a query not completed yet.
     private pending = false;
+    view: string = '';
 
-    constructor(config: ImapConfig) {
-        this.imap = new Imap({
+    constructor(config: Imap.Config) {
+        this.accountConfig = {
             ...config,
             authTimeout: 10000,
             connTimeout: 30000,
@@ -21,7 +30,16 @@ export class IMAP {
                 rejectUnauthorized: false,
             },
 
-        });
+        };
+        this.imap = new Imap(this.accountConfig);
+    }
+
+    get config() {
+        return this.accountConfig;
+    }
+
+    get email() {
+        return this.accountConfig.user;
     }
 
     init() {
@@ -39,8 +57,12 @@ export class IMAP {
         });
     }
 
-    setQuery(query: Query) {
-        this.query = query;
+    setEmailMonitoring(query: Query) {
+        this.fromMonitoring = query;
+    }
+
+    setMailBoxMonitoring(query: Query) {
+        this.mailBoxMonitoring = query;
     }
 
     openBox(mailBox: string, readOnly = false) {
@@ -119,6 +141,45 @@ export class IMAP {
         });
     }
 
+    getBoxes() {
+        return new Promise<Imap.MailBoxes>((resolve, reject)=>{
+            this.imap.getBoxes((err, mailBoxes: Imap.MailBoxes)=>{
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(mailBoxes);
+                }
+            });
+        });
+    }
+
+    getBoxesPath() {
+        return new Promise<{path: string, value: string}[]>(async (resolve, reject)=>{
+            const paths: {path: string, value: string}[] = [];
+            const boxes = await this.getBoxes();
+
+            const getPathes = (path: string, value: string, boxes: Imap.MailBoxes)=>{
+                for (const box of Object.keys(boxes)) {
+                    let newPath = path + box;
+                    let newValue = value + box;
+                    if (!boxes[box].attribs.includes('\\Noselect')) {
+                        paths.push({value: newValue, path: newPath});
+                    }
+
+                    if (boxes[box].children) {
+                        const children: Imap.MailBoxes = boxes[box].children;
+                        newPath = newPath + '/';
+                        newValue = newValue + boxes[box].delimiter;
+                        getPathes(newPath, newValue, children);
+                    }
+                }
+            };
+            getPathes('', '', boxes);
+
+            return resolve(paths);
+        });
+    }
+
     markAsSeen(messages: number[]) {
         return new Promise<void>(async (resolve, reject)=>{
             this.imap.addFlags(messages, ['SEEN'], (err)=>{
@@ -132,10 +193,11 @@ export class IMAP {
     }
 
     monitor() {
-        let setupTempFolder: SetupTempFolder = null;
+        const setupTempFolder: SetupTempFolder = null;
         this.monitorId = setInterval(async () => {
-            if (this.query) {
-                const {mailBox, criteria} = this.query;
+            if ((this.fromMonitoring || this.mailBoxMonitoring) && !this.pending) {
+                const {mailBox, criteria, folderId} = this.switcher^1 && this.fromMonitoring ? this.fromMonitoring : this.mailBoxMonitoring || this.fromMonitoring;
+                this.switcher ^= 1;
 
                 try {
                     // Check if the connection is still stable.
@@ -149,24 +211,48 @@ export class IMAP {
                     if (newMessages.length && !this.pending) {
                         this.pending = true;
 
-                        setupTempFolder = new SetupTempFolder();
-                        setupTempFolder.createTempFolder();
+                        SetupTempFolder.createTempFolder();
+                        const tempFolderPath = SetupTempFolder.tempFolderPath;
 
                         const data = await this.fetchAll(newMessages, {bodies: ''});
-                        await this.markAsSeen(newMessages);
+
+                        const includeAttachments = await joplin.settings.value(ATTACHMENTS);
+                        const exportType = await joplin.settings.value(EXPORT_TYPE);
+                        const attachmentsStyle = await joplin.settings.value(ATTACHMENTS_STYLE);
+                        const exportCriteria: ExportCriteria = {includeAttachments, exportType, attachmentsStyle};
+
                         for (let i = 0; i < data.length; i++) {
                             // post email
+                            const post = new PostNote();
+                            const ep = new EmailParser();
+                            const temp = await ep.parse(data[i]);
+                            const postCriteria : PostCriteria = {
+                                emailContent: temp,
+                                tempFolderPath: tempFolderPath,
+                                exportCriteria: exportCriteria,
+                            };
 
+                            if (folderId) {
+                                postCriteria['folderId'] = folderId,
+                                postCriteria['tags'] = [];
+                            }
+
+                            await post.post(postCriteria);
                         }
-                        setupTempFolder.removeTempFolder();
+
+                        await this.markAsSeen(newMessages);
+
+                        SetupTempFolder.removeTempFolder();
                         this.pending = false;
                     }
                 } catch (err) {
                     // Revoke the query
-                    this.query = null;
+                    this.mailBoxMonitoring = this.fromMonitoring = null;
+                    this.pending = false;
                     if (setupTempFolder) {
-                        setupTempFolder.removeTempFolder();
+                        SetupTempFolder.removeTempFolder();
                     }
+                    joplin.views.panels.postMessage(this.view, 'monitoringError');
                     alert(err);
                     throw err;
                 }

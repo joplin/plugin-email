@@ -1,6 +1,6 @@
 import joplin from 'api';
 import JoplinViewsPanels from 'api/JoplinViewsPanels';
-import {Message, Login, isLogin, isHide, isManualConnection, isLoginScreen, isLoginManually, isSearchByFrom, SearchByFrom, isUploadMessages, isEMLtoNote, EMLtoNote} from '../model/message.model';
+import {Message, Login, isLogin, isHide, isManualConnectionScreen, isLoginScreen, isLoginManually, isMonitorEmail, SearchByFrom, isUploadMessagesScreen, isUploadMessages, EMLtoNote, isLogout, isSelectAccount, SelectAccount, isMonitorMailBox, MonitorMailBox} from '../model/message.model';
 import {ImapConfig} from '../model/imapConfig.model';
 import {emailConfigure} from '../core/emailConfigure';
 import {IMAP} from '../core/imap';
@@ -8,13 +8,21 @@ import {PostNote} from '../core/postNote';
 import EmailParser from '../core/emailParser';
 import {EmailContent} from '../model/emailContent.model';
 import {SetupTempFolder} from '../core/setupTempFolder';
-import {JopinFolders} from '../model/joplinFolders.model';
+import {ExportCriteria} from '../model/exportCriteria.model';
+import {mainScreen, manualScreen, loginScreen, uploadMessagesScreen, loadingScreen} from './screens';
+import {State} from '../model/state.model';
+import {Config} from 'imap';
+import {PostCriteria} from '../model/postCriteria.model';
+import {ACCOUNTS, LAST_STATE} from '../constants';
 
 export class Panel {
     panels: JoplinViewsPanels;
     view: string;
     visibility: boolean;
     account = null;
+    defaultState: State = {accountConfig: null, from: '', isFromMonitor: false, mailBox: null, mailBoxes: null, isMailBoxMonitor: false, folderId: null};
+    lastState: State = {...this.defaultState};
+
     async setupPanel() {
         if (this.view) {
             await this.closeOpenPanel();
@@ -34,9 +42,42 @@ export class Panel {
 
         await this.addScript('./ui/webview.js');
 
-        // display the login screen
-        await this.loginScreen();
+        // To get the last state before the user exits from Joplin.
+        const state: State = await joplin.settings.value(LAST_STATE);
 
+        if (state.accountConfig) {
+            try {
+                const htmlLoadingScreen = loadingScreen();
+                await this.setHtml(htmlLoadingScreen);
+                this.lastState = {...state};
+                await this.login(this.lastState['accountConfig']);
+
+                if (state.isFromMonitor) {
+                    this.account.setEmailMonitoring({
+                        mailBox: 'inbox',
+                        criteria: [['FROM', state.from], 'UNSEEN'],
+                    });
+                }
+                if (state.isMailBoxMonitor) {
+                    this.account.setMailBoxMonitoring({
+                        mailBox: state.mailBox,
+                        folderId: state.folderId,
+                        criteria: ['ALL', 'UNSEEN'],
+                    });
+                }
+                const htmlMainScreen = await mainScreen(this.lastState);
+                await this.setHtml(htmlMainScreen);
+            } catch (err) {
+                alert(err);
+                const htmlLoginScreen = await loginScreen();
+                await this.setHtml(htmlLoginScreen);
+                throw err;
+            }
+        } else {
+            // display the login screen
+            const htmlLoginScreen = await loginScreen();
+            await this.setHtml(htmlLoginScreen);
+        }
         await this.constructBridge();
     }
 
@@ -46,10 +87,6 @@ export class Panel {
 
     async addScript(path: string) {
         await this.panels.addScript(this.view, path);
-    }
-
-    async loginScreen() {
-        await this.setHtml(loginScreen);
     }
 
     async closeOpenPanel() {
@@ -63,385 +100,143 @@ export class Panel {
         });
     }
 
+    async login(config: Config) {
+        this.account = new IMAP(config);
+        await this.account.init();
+        this.account.view = this.view;
+        this.account.monitor();
+        const mailBoxes = await this.account.getBoxesPath();
+        this.lastState['mailBoxes'] = mailBoxes;
+        this.lastState['accountConfig'] = this.account.config;
+        const htmlMainScreen = await mainScreen(this.lastState);
+        await this.setHtml(htmlMainScreen);
+        await joplin.settings.setValue(LAST_STATE, this.lastState);
+
+        // to add or update account config
+        const accoutns = await joplin.settings.value(ACCOUNTS);
+        accoutns[this.account.email] = this.account.config;
+        joplin.settings.setValue(ACCOUNTS, accoutns);
+    }
+
     async bridge(message: Message) {
-        switch (message !== undefined) {
-        // parsing email & start Imap eonnection
-        case isLogin(message):
-            const imapConfig: ImapConfig = emailConfigure(message as Login);
-
-            // It will alert the user using the manual connection if it can't find an email provider in the email providers list.
-            if (imapConfig) {
-                this.account = new IMAP(imapConfig as ImapConfig);
-
-                // If a connection is established, it will display the main screen and start monitoring waiting for any query.
-                try {
-                    await this.account.init();
-                    await this.setHtml(mainScreen(null));
-                    this.account.monitor();
-                } catch (err) {
-                    alert(err);
-                    throw new Error(err);
-                }
-            } else {
-                alert(`Sorry, an email provider couldn't be found, Please use the manual connection.`);
+        if (isLoginScreen(message)) {
+            // close old account connection if any.
+            if (this.account) {
+                this.account.close();
+                this.account = null;
             }
-            break;
-
-        case isLoginManually(message):
-
-            this.account = new IMAP(message as ImapConfig);
-
-            // If a connection is established, it will display the main screen and start monitoring waiting for any query.
+            const htmlLoginScreen = await loginScreen();
+            await this.setHtml(htmlLoginScreen);
+        } else if (isLogin(message)) {
             try {
-                await this.account.init();
-                await this.setHtml(mainScreen(null));
-                this.account.monitor();
+                // It will alert the user using the manual connection if it can't find an email provider in the email providers list.
+                const imapConfig: ImapConfig = emailConfigure(message as Login);
+                await this.login(imapConfig);
             } catch (err) {
                 alert(err);
-                throw new Error(err);
+                throw err;
+            } finally {
+                this.panels.postMessage(this.view, 'enableLoginScreen');
             }
-            break;
-
-        case isHide(message):
-            this.closeOpenPanel();
-            break;
-
-        case isManualConnection(message):
-            console.log('set Manual Screen');
-            await this.setHtml(manualScreen);
-            break;
-
-        case isLoginScreen(message):
-            // close old account connection if any
-            if (this.account) {
-                this.account.close(), this.account = null;
-            }
-
-            this.loginScreen();
-            break;
-
-        case isSearchByFrom(message):
-            const fromState: Message = message as SearchByFrom;
-
-            if (fromState.state === 'close') {
-                this.account.setQuery({
-                    mailBox: 'inbox',
-                    criteria: [['FROM', fromState.from], 'UNSEEN'],
-                });
-                await this.setHtml(mainScreen(fromState.from));
-            } else {
-                this.account.setQuery(null);
-                await this.setHtml(mainScreen(null));
-            }
-            break;
-        case isUploadMessages(message):
-            const screen = await uploadMessagesScreen();
-            await this.setHtml(screen);
-            break;
-        case isEMLtoNote(message):
-            const {emlFiles, tags, folderId} = message as EMLtoNote;
-            let setupTempFolder: SetupTempFolder = null;
-
+        } else if (isManualConnectionScreen(message)) {
+            const htmlManualScreen = manualScreen();
+            await this.setHtml(htmlManualScreen);
+        } else if (isLoginManually(message)) {
             try {
-                setupTempFolder = new SetupTempFolder();
-                setupTempFolder.createTempFolder();
-                const tempFolderPath = setupTempFolder.tempFolderPath;
+                // close old account connection if any
+                if (this.account) {
+                    this.account.close();
+                    this.account = null;
+                }
+                // If a connection is established, it will display the main screen and start monitoring waiting for any query.
+                await this.login(message as ImapConfig);
+            } catch (err) {
+                alert(err);
+                throw err;
+            } finally {
+                this.panels.postMessage(this.view, 'enableManualLoginScreen');
+            }
+        } else if (isMonitorEmail(message)) {
+            const query: Message = message as SearchByFrom;
+
+            if (query.state === 'close') {
+                this.account.setEmailMonitoring({
+                    mailBox: 'inbox',
+                    criteria: [['FROM', query.from], 'UNSEEN'],
+                });
+                this.lastState['from'] = query.from;
+                this.lastState['isFromMonitor'] = true;
+                await this.setHtml(await mainScreen(this.lastState));
+                await joplin.settings.setValue(LAST_STATE, this.lastState);
+            } else {
+                this.lastState['isFromMonitor'] = false;
+                this.account.setEmailMonitoring(null);
+                await this.setHtml(await mainScreen(this.lastState));
+                await joplin.settings.setValue(LAST_STATE, this.lastState);
+            }
+        } else if (isMonitorMailBox(message)) {
+            const query = message as MonitorMailBox;
+
+            if (query.monitorMailBox) {
+                this.account.setMailBoxMonitoring({
+                    mailBox: query.mailbox,
+                    criteria: ['ALL', 'UNSEEN'],
+                    folderId: query.folderId,
+                });
+
+                this.lastState['isMailBoxMonitor'] = true;
+                this.lastState['mailBox'] = query.mailbox;
+                this.lastState['folderId'] = query.folderId;
+                await joplin.settings.setValue(LAST_STATE, this.lastState);
+                await this.setHtml(await mainScreen(this.lastState));
+            } else {
+                this.account.setMailBoxMonitoring(null);
+
+                this.lastState['isMailBoxMonitor'] = false;
+                await joplin.settings.setValue(LAST_STATE, this.lastState);
+                await this.setHtml(await mainScreen(this.lastState));
+            }
+        } else if (isUploadMessagesScreen(message)) {
+            const htmlUploadMessagesScreen = await uploadMessagesScreen();
+            await this.setHtml(htmlUploadMessagesScreen);
+        } else if (isUploadMessages(message)) {
+            const {emlFiles, tags, folderId, exportType, includeAttachments, attachmentsStyle} = message as EMLtoNote;
+            const exportCriteria: ExportCriteria = {exportType, includeAttachments, attachmentsStyle};
+            try {
+                const tempFolderPath = SetupTempFolder.tempFolderPath;
+                SetupTempFolder.createTempFolder();
 
                 for (let i = 0; i < emlFiles.length; i++) {
                     const parser = new EmailParser();
-                    const messagePror:EmailContent = await parser.parse(emlFiles[i]);
+                    const emailContent:EmailContent = await parser.parse(emlFiles[i]);
                     const note = new PostNote();
-                    await note.post(messagePror, tempFolderPath, folderId, tags);
+                    const postCriteria: PostCriteria = {emailContent, exportCriteria, tempFolderPath, folderId, tags};
+                    await note.post(postCriteria);
                 }
-
-                setupTempFolder.removeTempFolder();
             } catch (err) {
-                if (setupTempFolder) {
-                    setupTempFolder.removeTempFolder();
-                }
                 alert(err);
                 throw err;
+            } finally {
+                this.panels.postMessage(this.view, 'enableUploadEMLScreen');
+                SetupTempFolder.removeTempFolder();
             }
-            break;
+        } else if (isSelectAccount(message)) {
+            this.lastState = {...this.defaultState};
+            const config = message as SelectAccount;
+            this.account = new IMAP(config.account as ImapConfig);
+            await this.account.init();
+            const htmlMainScreen = await mainScreen(this.lastState);
+            await this.setHtml(htmlMainScreen);
+            await joplin.settings.setValue(LAST_STATE, this.lastState);
+            this.account.monitor();
+        } else if (isLogout(message)) {
+            this.lastState = {...this.defaultState};
+            this.account.close();
+            const htmlLoginScreen = await loginScreen();
+            await this.setHtml(htmlLoginScreen);
+            await joplin.settings.setValue(LAST_STATE, this.lastState);
+        } else if (isHide(message)) {
+            await this.closeOpenPanel();
         }
     }
-}
-
-
-const loginScreen = `
-<div class="container">
-
-<div class="row" style="font-size: large;">
-
-  <div class="col-md-9 col-lg-7 col-xl-5 mx-auto">
-
-    <div class="card border-0 shadow rounded-3 my-5" style="opacity: 0.97; top: 100px;">
-
-      <div class="card-body p-4 p-sm-5">
-
-        <h1 class="card-title text-center mb-3 fw-light fs-1">Login</h1>
-
-        <form action="" onsubmit="login(); return false">
-          
-          <div class="form-floating mb-3">
-            <input type="email" class="form-control" id="email" placeholder="name@example.com" required>
-            <label for="floatingInput">Email address</label>
-          </div>
-          
-          <div class="form-floating mb-3">
-            <input type="password" class="form-control" id="password" placeholder="Password" required>
-            <label for="floatingPassword">Password</label>
-          </div>
-
-          <div class="d-grid">
-            <button id="btn" class="btn btn-outline-primary btn-login text-uppercase fw-bold" type="submit" style="font-size:large;">Login</button>
-          </div>
-
-        </form>
-
-        <br>
-
-        <div class="container" style="text-align: center;">
-          <button type="button" class="btn btn-outline-info" style="width: 75%; font-size: large;" onclick="manualConnection()">Manually connect to IMAP</button>   
-          <br>
-          <br>
-          <button type="button" class="btn btn-outline-success" style="width: 75%; font-size: large;" onclick="uploadMessages()">Convert Saved Messages</button>
-        </div>
-
-        <hr class="my-4">
-
-        <div class="container" style="text-align: center;">
-          <button type="button" class="btn btn-outline-danger" onclick="hide()">Close</button>
-        </div>
-
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-`;
-
-const manualScreen = `
-<div class="container">
-
-<div class="row" style="font-size: large;">
-
-  <div class="col-md-9 col-lg-7 col-xl-5 mx-auto">
-
-    <div class="card border-0 shadow rounded-3 my-5" style="opacity: 0.97; top: 100px;">
-
-      <div class="card-body p-4 p-sm-5">
-
-        <h1 class="card-title text-center mb-3 fw-light fs-1">Login</h1>
-
-        <form action="" onsubmit="loginManually(); return false">
-          
-          <div class="form-floating mb-3">
-            <input type="email" class="form-control" id="email" placeholder="name@example.com" required>
-            <label for="floatingInput">Email address</label>
-          </div>
-          
-          <div class="form-floating mb-3">
-            <input type="password" class="form-control" id="password" placeholder="Password" required>
-            <label for="floatingPassword">Password</label>
-          </div>
-
-          <div class="input-group">
-            <span class="input-group-text">Server</span>
-            <input type="text" aria-label="First name" class="form-control" placeholder="imap.example.com"
-              id="server" required>
-          </div>
-
-        <br>
-
-        <div class="input-group">
-          <span class="input-group-text">PORT</span>
-          <input type="number" aria-label="First name" class="form-control" placeholder="993" min="1" id="port" required>
-        </div>
-
-        <br>
-
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" value="" id="ssl_tls" checked>
-          <label class="form-check-label" for="ssl_tls">
-            SSL/TLS
-          </label>
-        </div>
-
-        <br>
-
-          <div class="d-grid">
-            <button id="btn" class="btn btn-outline-primary btn-login text-uppercase fw-bold" type="submit" style="font-size:large;">Login</button>
-          </div>
-
-        </form>
-
-        <br>
-
-        <div class="container" style="text-align: center;">
-          <button type="button" class="btn btn-outline-info" style="width: 75%; font-size: large;"
-            onclick="loginScreen()">Login Screen</button>
-        </div>
-
-        <hr class="my-4">
-
-        <div class="container" style="text-align: center;">
-          <button type="button" class="btn btn-outline-danger" onclick="hide()">Close</button>
-        </div>
-
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-`;
-
-function mainScreen(email: string): string {
-    let from = '';
-    let readOnly = '';
-    let checked = '';
-
-    if (email) {
-        from = email;
-        readOnly = 'readOnly';
-        checked = 'checked';
-    }
-
-    return `
-<div class="container">
-
-<div class="row" style="font-size: large;">
-
-  <div class="col-md-9 col-lg-7 col-xl-5 mx-auto">
-
-    <div class="card border-0 shadow rounded-3 my-5" style="opacity: 0.97; top: 100px;">
-
-      <div class="card-body p-4 p-sm-5">
-
-        <h1 class="card-title text-center mb-3 fw-light fs-1">Main Screen</h1>
-
-        <div class="container" style="text-align: center;">
-
-          <div class="input-group mb-3">
-            <span class="input-group-text" id="basic-addon1">From</span>
-            <input type="email" class="form-control" placeholder="email" aria-label="Email"
-              aria-describedby="basic-addon1" id='from' value = "${from}" ${readOnly} required>
-          </div>
-          <div class="container" style="text-align: center">
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked"
-                onchange="toggle()" ${checked}>
-              <label class="form-check-label" for="flexSwitchCheckChecked">Fetching & Monitoring</label>
-            </div>
-          </div>
-        </div>
-        
-        <br>
-
-        <div class="container" style="text-align: center;">
-          <button type="button" class="btn btn-outline-info" style="width: 75%; font-size: large;"
-            onclick="loginScreen()">Logout</button>
-        </div>
-
-        <hr class="my-4">
-
-        <div class="container" style="text-align: center;">
-          <button type="button" class="btn btn-outline-danger" onclick="hide()">Close</button>
-        </div>
-
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-`;
-}
-
-async function uploadMessagesScreen() {
-    let joplinFolders: JopinFolders;
-    const folders = [];
-
-    do {
-        joplinFolders = await joplin.data.get(['folders']);
-
-        for (let i = 0; i < joplinFolders.items.length; i++) {
-            const folder = joplinFolders.items[i];
-            let path = folder.title;
-            let node = folder;
-            const id = folder.id;
-
-            // The parent folder path
-            while (node.parent_id !== '') {
-                node = await joplin.data.get(['folders', node.parent_id]);
-                path = `${node.title}/${path}`;
-            }
-            folders.push({path: path, id: id});
-        }
-    } while (joplinFolders.has_more);
-
-    const options = [];
-
-    folders.forEach((folder) => {
-        const option = `<option value="${folder.id}">${folder.path}</option>`;
-        options.push(option);
-    });
-
-    return `
-<div class="container">
-
-<div class="row" style="font-size: large;">
-
-  <div class="col-md-9 col-lg-7 col-xl-5 mx-auto">
-
-    <div class="card border-0 shadow rounded-3 my-5" style="opacity: 0.97; top: 100px;">
-
-      <div class="card-body p-4 p-sm-5">
-
-        <h1 class="card-title text-center mb-3 fw-light fs-1">Upload .eml Files</h1>
-
-        <br>
-
-        <div class="container" style="text-align: center;">
-
-          <div class="mb-3">
-            <input class="form-control" type="file" id="formFileMultiple" accept=".eml" multiple>
-          </div>
-
-          <div class="input-group mb-3">
-          <span class="input-group-text" id="basic-addon1"> NoteBooks :</span>
-
-          <select class="form-select" aria-label="Default select example" id = 'notebook' onchange="createTag()">
-            <option disabled selected value >Open this select notebooks</option>
-            ${options}
-          </select>
-          
-          </div>
-
-          <div  class="input-group mb-3" id='div-tag'>
-
-          </div>
-
-          <button id="btn" class="btn btn-outline-success btn-login text-uppercase fw-bold" type="submit"  onclick="uploadEMLfiles()" style="width: 75%; font-size:large;">Convert</button>
-
-        </div>
-
-        <br>
-
-        <div class="container" style="text-align: center;">
-          <button type="button" class="btn btn-outline-info" style="width: 75%; font-size: large;"
-            onclick="loginScreen()">Login Screen</button>
-        </div>
-
-        <hr class="my-4">
-
-        <div class="container" style="text-align: center;">
-          <button type="button" class="btn btn-outline-danger" onclick="hide()">Close</button>
-        </div>
-
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-`;
 }

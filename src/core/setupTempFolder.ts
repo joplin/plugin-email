@@ -5,20 +5,17 @@ const fs = joplin.require('fs-extra');
 
 
 export class SetupTempFolder {
-    tempFolder: string;
-    constructor() {
-        this.tempFolder = path.join(tmpdir(), 'joplin-email-plugin');
+    static tempFolder = path.join(tmpdir(), 'joplin-email-plugin');
+
+    static get tempFolderPath() {
+        return SetupTempFolder.tempFolder;
     }
 
-    get tempFolderPath() {
-        return this.tempFolder;
+    static createTempFolder() {
+        fs.mkdirSync(SetupTempFolder.tempFolder, {recursive: true});
     }
 
-    createTempFolder() {
-        fs.mkdirSync(this.tempFolder, {recursive: true});
-    }
-
-    removeTempFolder() {
-        fs.rmdirSync(this.tempFolder, {recursive: true});
+    static removeTempFolder() {
+        fs.rmdirSync(SetupTempFolder.tempFolder, {recursive: true});
     }
 }

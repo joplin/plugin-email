@@ -88,17 +88,13 @@ describe('Testing various types of writing the email', () => {
         expect(config).toStrictEqual(answer);
     });
 
-    it('A provider that does not belong on the email provider list', () => {
+    it('If a provider is not on the email provider list, it will throw an error.', () => {
         const login: Login = {
             login: true,
             email: 'test@company.com',
             password: '12345',
         };
 
-        const config = emailConfigure(login);
-
-        const answer = undefined;
-
-        expect(config).toStrictEqual(answer);
+        expect(()=>emailConfigure(login)).toThrow(Error(`Sorry, an email provider couldn't be found, Please use the manual connection.`));
     });
 });

@@ -21,7 +21,7 @@ export class Attachments {
         try {
             // for each attachment will create an actual file of the attachment and posting to Joplin.
             for (let i = 0; i < this.attachments.length; i++) {
-                const {contentId, filename} = this.attachments[i];
+                const {contentId, filename, mimeType} = this.attachments[i];
                 const filePath = path.join(tempFolder, this.attachments[i].filename);
 
                 // to create a file
@@ -39,10 +39,39 @@ export class Attachments {
                     ],
                 );
 
-                attachmentsProp.push({contentId: contentId, id: resource.id});
+                attachmentsProp.push({contentId: contentId, id: resource.id, fileName: filename, mimeType: mimeType});
             }
 
             return attachmentsProp;
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    async postAttachment(attachment: Attachment): Promise<AttachmentProperties> {
+        const tempFolder = this.tempFolderPath;
+
+        try {
+            // for each attachment will create an actual file of the attachment and posting to Joplin.
+            const {contentId, filename, mimeType, content} = attachment;
+            const path = `${tempFolder}${filename}`;
+
+            // to create a file
+            fs.writeFileSync(path, Buffer.from(content));
+
+            // To post a file to Joplin
+            const resource = await joplin.data.post(
+                ['resources'],
+                null,
+                {title: filename}, // Resource metadata
+                [
+                    {
+                        path: path, // Actual file
+                    },
+                ],
+            );
+
+            return {contentId: contentId, id: resource.id, fileName: filename, mimeType: mimeType};
         } catch (err) {
             throw err;
         }
