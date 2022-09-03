@@ -1,5 +1,8 @@
 // This regexs from https://github.com/regexhq/mentions-regex/blob/master/index.js
+// @folder regex Regular expression for matching @foldre mentions
 const mentionPattern = /(?:^|[^a-zA-Z0-9_＠!@#$%&*])(?:(?:﹫|@|＠)(?!\/))([a-zA-Z0-9/_.]{1,50})(?:\b(?!﹫|@|＠|#|⋕|♯|⌗)|$)/g;
+
+// #tag regex Regular expression for matching #tag mentions
 const tagPattern = /(?:^|[^a-zA-Z0-9_＠!@#$%&*])(?:(?:#|⋕|♯|⌗)(?!\/))([a-zA-Z0-9/_.]{1,50})(?:\b(?!﹫|@|＠|#|⋕|♯|⌗)|$)/g;
 
 let keys: string[] = [];
@@ -35,6 +38,7 @@ function emailFolders(s: string) {
 
     for (let i = 0; i < s.length; i++) {
         if (mentionSymbol.includes(s[i])) {
+            // Assign a key to each character in the string to be able to run the regex on different languages and Unicode characters.
             alphaKey.set(s[i], s[i]);
             alphaIndex.set(s[i], s[i]);
             target += s[i];
@@ -51,12 +55,15 @@ function emailFolders(s: string) {
     }
 
     let m;
+
+    // to extract all matches from the string.
     while (m = mentionPattern.exec(target)) {
         let ans = '';
         let key = '';
         for (let i = 0; i < m[1].length; i += 2) {
             key = m[1].substr(i, 2);
 
+            // Return the original character from the string
             const mKey = alphaIndex.get(key);
             ans += mKey;
         }
@@ -76,6 +83,7 @@ function emailTags(s: string) {
 
     for (let i = 0; i < s.length; i++) {
         if (tagsSymbol.includes(s[i])) {
+            // Assign a key to each character in the string to be able to run the regex on different languages and Unicode characters.
             alphaKey.set(s[i], s[i]);
             alphaIndex.set(s[i], s[i]);
             target += s[i];
@@ -92,11 +100,15 @@ function emailTags(s: string) {
     }
 
     let m;
+
+    // to extract all matches from the string.
     while (m = tagPattern.exec(target)) {
         let ans = '';
         let key = '';
         for (let i = 0; i < m[1].length; i += 2) {
             key = m[1].substr(i, 2);
+
+            // Return the original character from the string
             const mKey = alphaIndex.get(key);
             ans += mKey;
         }
@@ -106,6 +118,7 @@ function emailTags(s: string) {
     return tags;
 }
 
+// To check whether the string line is RTL language or not.
 function isRTL(s: string) {
     const rtlChars = '\u0591-\u07FF\u200F\u202B\u202E\uFB1D-\uFDFD\uFE70-\uFEFC';
     const rtlDirCheck = new RegExp('^[^'+rtlChars+']*?['+rtlChars+']');
@@ -176,7 +189,12 @@ function removeInvisibleCharacters(s: string) {
 }
 
 export function noteLocationBySubject(s: string) {
-    generateKeys();
+    if (keys.length) {
+        // reset index
+        nextKey = 0;
+    } else {
+        generateKeys();
+    }
 
     // To avoid 'Non-breaking space'.
     s = removeInvisibleCharacters(s);
@@ -187,6 +205,7 @@ export function noteLocationBySubject(s: string) {
     let _folders = emailFolders(s);
     const _tags = emailTags(s);
 
+    // If no folder is mentioned, it will locate the note in the 'email messages' folder.
     if (_folders.length === 0) {
         _folders = ['email messages'];
     }
