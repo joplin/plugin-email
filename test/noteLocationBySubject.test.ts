@@ -33,7 +33,7 @@ describe('The subject without folders or tags.', ()=>{
     it(`It will return two empty arrays of subjects and tags in the subject that don't contain mentions and tags.`, ()=>{
         const loc = noteLocationBySubject('subject test');
         const ans = {
-            folders: [],
+            folders: ['email messages'],
             tags: [],
         };
         expect(loc).toEqual(ans);
@@ -42,7 +42,7 @@ describe('The subject without folders or tags.', ()=>{
     it(`Empty subject.`, ()=>{
         const loc = noteLocationBySubject('');
         const ans = {
-            folders: [],
+            folders: ['email messages'],
             tags: [],
         };
         expect(loc).toEqual(ans);
@@ -51,7 +51,7 @@ describe('The subject without folders or tags.', ()=>{
     it('Should ignore the empty mention or empty tag.', ()=>{
         const loc = noteLocationBySubject('subject @ @ joplin @ @ @ @ @ # # # # # joplin # # joplin');
         const ans = {
-            folders: [],
+            folders: ['email messages'],
             tags: [],
         };
         expect(loc).toEqual(ans);
@@ -72,7 +72,7 @@ describe('@ symbol between text.', ()=>{
     it('Should ignore the @ symbol between text.', ()=>{
         const loc = noteLocationBySubject('subject email@gmail.com test@test@joplin@email_plugin #joplin');
         const ans = {
-            folders: [],
+            folders: ['email messages'],
             tags: ['joplin'],
         };
         expect(loc).toEqual(ans);
@@ -124,7 +124,7 @@ describe('# within the name of a folder or @ within the name of a tag.', ()=>{
     it('@ within the name of a tag.', ()=>{
         const loc = noteLocationBySubject('subject #@go');
         const ans = {
-            folders: [],
+            folders: ['email messages'],
             tags: ['@go'],
         };
         expect(loc).toEqual(ans);
