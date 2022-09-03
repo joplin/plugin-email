@@ -184,8 +184,12 @@ export function noteLocationBySubject(s: string) {
     if (isRTL(s)) {
         s = wrapDir(s);
     }
-    const _folders = emailFolders(s);
+    let _folders = emailFolders(s);
     const _tags = emailTags(s);
+
+    if (_folders.length === 0) {
+        _folders = ['email messages'];
+    }
 
     return {folders: _folders, tags: _tags};
 }
