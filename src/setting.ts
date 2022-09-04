@@ -27,14 +27,14 @@ export const setting = {
     },
 
     [ATTACHMENTS_STYLE]: {
-        value: 'Tabel',
+        value: 'Table',
         type: SettingItemType.String,
         section: SECTION_NAME,
         isEnum: true,
         public: true,
         label: 'Attachments Style',
         options: {
-            'Tabel': 'Tabel',
+            'Table': 'Table',
             'Link': 'Link',
         },
         description: 'Note: Table Style displays images and videos in the note.',

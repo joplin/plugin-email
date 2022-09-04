@@ -392,7 +392,7 @@ export async function uploadMessagesScreen() {
           <div class="input-group mb-3">  
           <span class="input-group-text" id="basic-addon1"> Attachments Style </span>
           <select class="form-select" aria-label="Default select example" id = 'attachments_style'>
-            <option value="Tabel">Tabel</option>;
+            <option value="Table">Table</option>;
             <option value="Link">Link</option>;
           </select>
         </div>

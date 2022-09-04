@@ -194,7 +194,7 @@ export class PostNote {
         this.emailHtmlBody = dom.body.innerHTML;
     }
 
-    async addAttachments(attachmentsStyle: 'Tabel' | 'Link'): Promise<string> {
+    async addAttachments(attachmentsStyle: 'Table' | 'Link'): Promise<string> {
         const postAttachments = new Attachments(this.attachments, this.tempFolderPath);
         const attachmentsProp: AttachmentProperties[] = await postAttachments.postAttachments();
 
