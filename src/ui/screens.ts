@@ -73,7 +73,7 @@ export async function loginScreen() {
           </blockquote>
 
           <div class="d-grid">
-            <button id="btn" class="btn btn-outline-primary btn-login text-uppercase fw-bold" type="submit" style="font-size:large;">Login</button>
+            <button id="login_btn" class="btn btn-outline-primary btn-login text-uppercase fw-bold" type="submit" style="font-size:large;">Login</button>
           </div>
 
         </form>
@@ -155,7 +155,7 @@ export function manualScreen() {
         </blockquote>
 
           <div class="d-grid">
-            <button id="btn" class="btn btn-outline-primary btn-login text-uppercase fw-bold" type="submit" style="font-size:large;">Login</button>
+            <button id="login_btn" class="btn btn-outline-primary btn-login text-uppercase fw-bold" type="submit" style="font-size:large;">Login</button>
           </div>
 
         </form>
@@ -189,7 +189,7 @@ export async function mainScreen(lastState: State): Promise<string> {
     let disabledMailBoxes = '';
     let checkedTogle = '';
 
-    if (lastState['isFromMonitor']) {
+    if (lastState['isEmailMonitor']) {
         readOnly = 'readOnly';
         checked = 'checked';
     }
@@ -407,7 +407,7 @@ export async function uploadMessagesScreen() {
 
           <br>
 
-          <button id="btn" class="btn btn-outline-success btn-login text-uppercase fw-bold" type="submit"  onclick="uploadEMLfiles()" style="width: 75%; font-size:large;">Convert</button>
+          <button id="convert_btn" class="btn btn-outline-success btn-login text-uppercase fw-bold" type="submit"  onclick="uploadEMLfiles()" style="width: 75%; font-size:large;">Convert</button>
 
         </div>
 

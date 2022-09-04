@@ -48,7 +48,7 @@ export class Attachments {
         }
     }
 
-    async postAttachment(attachment: Attachment): Promise<AttachmentProperties> {
+    async postInlineAttachment(attachment: Attachment): Promise<AttachmentProperties> {
         const tempFolder = this.tempFolderPath;
 
         try {

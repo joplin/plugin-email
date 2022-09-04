@@ -23,30 +23,30 @@ export function isHide(message: any): message is Hide {
 
 
 export interface ManualConnectionScreen {
-    manual_connection_screen: boolean
+    manualConnectionScreen: boolean
 }
 
 // Type predicates
 export function isManualConnectionScreen(message: any): message is ManualConnectionScreen {
-    return 'manual_connection_screen' in message;
+    return 'manualConnectionScreen' in message;
 }
 
 export interface LoginScreen {
-    login_screen: boolean
+    loginScreen: boolean
 }
 
 // Type predicates
 export function isLoginScreen(message: any): message is LoginScreen {
-    return 'login_screen' in message;
+    return 'loginScreen' in message;
 }
 
 export interface LoginManually extends ImapConfig {
-    login_manually: boolean,
+    loginManually: boolean,
 }
 
 // Type predicates
 export function isLoginManually(message: any): message is LoginManually {
-    return 'login_manually' in message && 'user' in message && 'password' in message &&
+    return 'loginManually' in message && 'user' in message && 'password' in message &&
         'host' in message && 'port' in message && 'tls' in message;
 }
 
@@ -65,12 +65,12 @@ export function isMonitorEmail(message: any): message is SearchByFrom {
 }
 
 export interface UploadMessagesScreen{
-    upload_messages_screen: boolean,
+    uploadMessagesScreen: boolean,
 }
 
 // Type predicates
 export function isUploadMessagesScreen(message: any): message is UploadMessagesScreen {
-    return 'upload_messages_screen' in message;
+    return 'uploadMessagesScreen' in message;
 }
 
 export interface EMLtoNote{

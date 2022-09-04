@@ -17,7 +17,7 @@ function login() {
 // When clicking on the 'Manually connect to IMAP' button.
 function manualConnectionScreen() {
     webviewApi.postMessage({
-        manual_connection_screen: true,
+        manualConnectionScreen: true,
     });
 }
 
@@ -31,7 +31,7 @@ function hide() {
 // When clicking on the 'login screen' button.
 function loginScreen() {
     webviewApi.postMessage({
-        login_screen: true,
+        loginScreen: true,
     });
 }
 
@@ -46,7 +46,7 @@ function loginManually() {
     disabledManualLoginScreen(true);
 
     webviewApi.postMessage({
-        login_manually: true,
+        loginManually: true,
         user: email,
         password: password,
         host: server,
@@ -82,7 +82,7 @@ function toggle() {
 
 function uploadMessagesScreen() {
     webviewApi.postMessage({
-        upload_messages_screen: true,
+        uploadMessagesScreen: true,
     });
 }
 
@@ -174,7 +174,7 @@ function selectedAccount() {
     disabledManualLoginScreen(true);
 
     webviewApi.postMessage({
-        login_manually: true,
+        loginManually: true,
         user: config.user,
         password: config.password,
         host: config.host,
@@ -217,7 +217,7 @@ function toggleBox() {
 function disabledLoginScreen(flag) {
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
-    const loginBtn = document.getElementById('btn');
+    const loginBtn = document.getElementById('login_btn');
     if (flag === false) {
         emailInput.readOnly = passwordInput.readOnly = loginBtn.disabled = false;
         loginBtn.innerHTML = 'Login';
@@ -234,7 +234,7 @@ function disabledManualLoginScreen(flag) {
     const serverInput = document.getElementById('server');
     const portInput = document.getElementById('port');
     const sslTlsInput = document.getElementById('ssl_tls');
-    const loginBtn = document.getElementById('btn');
+    const loginBtn = document.getElementById('login_btn');
     const selectedAccountBtn = document.getElementById('selectedAccount');
 
     if (flag === false) {
@@ -265,7 +265,7 @@ function disabledUploadEMLScreen(flag) {
     const includeAttachmentsInput = document.getElementById('include_attachments');
     const exportTypeInput = document.getElementById('export_type');
     const attachmentsStyleInput = document.getElementById('attachments_style');
-    const loginBtn = document.getElementById('btn');
+    const loginBtn = document.getElementById('convert_btn');
 
     if (flag === false) {
         filesInput.disabled = folderInput.disabled = includeAttachmentsInput.disabled = exportTypeInput.disabled = attachmentsStyleInput.disabled = loginBtn.disabled = false;

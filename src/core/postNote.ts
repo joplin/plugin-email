@@ -186,7 +186,7 @@ export class PostNote {
                 const attachment = this.attachments.find((attachment)=>attachment.contentId && attachment.contentId === `<${cid}>`);
 
                 if (attachment) {
-                    const resource = await postAttachments.postAttachment(attachment);
+                    const resource = await postAttachments.postInlineAttachment(attachment);
                     img.src = `:/${resource.id}`;
                 }
             }

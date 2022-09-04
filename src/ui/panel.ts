@@ -20,7 +20,7 @@ export class Panel {
     view: string;
     visibility: boolean;
     account = null;
-    defaultState: State = {accountConfig: null, from: '', isFromMonitor: false, mailBox: null, mailBoxes: null, isMailBoxMonitor: false, folderId: null};
+    defaultState: State = {accountConfig: null, from: '', isEmailMonitor: false, mailBox: null, mailBoxes: null, isMailBoxMonitor: false, folderId: null};
     lastState: State = {...this.defaultState};
 
     async setupPanel() {
@@ -52,7 +52,7 @@ export class Panel {
                 this.lastState = {...state};
                 await this.login(this.lastState['accountConfig']);
 
-                if (state.isFromMonitor) {
+                if (state.isEmailMonitor) {
                     this.account.setEmailMonitoring({
                         mailBox: 'inbox',
                         criteria: [['FROM', state.from], 'UNSEEN'],
@@ -165,13 +165,17 @@ export class Panel {
                     criteria: [['FROM', query.from], 'UNSEEN'],
                 });
                 this.lastState['from'] = query.from;
-                this.lastState['isFromMonitor'] = true;
-                await this.setHtml(await mainScreen(this.lastState));
+                this.lastState['isEmailMonitor'] = true;
+
+                const htmlMainScreen = await mainScreen(this.lastState);
+                await this.setHtml(htmlMainScreen);
                 await joplin.settings.setValue(LAST_STATE, this.lastState);
             } else {
-                this.lastState['isFromMonitor'] = false;
+                this.lastState['isEmailMonitor'] = false;
                 this.account.setEmailMonitoring(null);
-                await this.setHtml(await mainScreen(this.lastState));
+
+                const htmlMainScreen = await mainScreen(this.lastState);
+                await this.setHtml(htmlMainScreen);
                 await joplin.settings.setValue(LAST_STATE, this.lastState);
             }
         } else if (isMonitorMailBox(message)) {
@@ -188,13 +192,15 @@ export class Panel {
                 this.lastState['mailBox'] = query.mailbox;
                 this.lastState['folderId'] = query.folderId;
                 await joplin.settings.setValue(LAST_STATE, this.lastState);
-                await this.setHtml(await mainScreen(this.lastState));
+                const htmlMainScreen = await mainScreen(this.lastState);
+                await this.setHtml(htmlMainScreen);
             } else {
                 this.account.setMailBoxMonitoring(null);
 
                 this.lastState['isMailBoxMonitor'] = false;
                 await joplin.settings.setValue(LAST_STATE, this.lastState);
-                await this.setHtml(await mainScreen(this.lastState));
+                const htmlMainScreen = await mainScreen(this.lastState);
+                await this.setHtml(htmlMainScreen);
             }
         } else if (isUploadMessagesScreen(message)) {
             const htmlUploadMessagesScreen = await uploadMessagesScreen();
@@ -232,6 +238,7 @@ export class Panel {
         } else if (isLogout(message)) {
             this.lastState = {...this.defaultState};
             this.account.close();
+            this.account = null;
             const htmlLoginScreen = await loginScreen();
             await this.setHtml(htmlLoginScreen);
             await joplin.settings.setValue(LAST_STATE, this.lastState);
