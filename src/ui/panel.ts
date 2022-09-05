@@ -1,6 +1,6 @@
 import joplin from 'api';
 import JoplinViewsPanels from 'api/JoplinViewsPanels';
-import {Message, Login, isLogin, isHide, isManualConnectionScreen, isLoginScreen, isLoginManually, isMonitorEmail, SearchByFrom, isUploadMessagesScreen, isUploadMessages, EMLtoNote, isLogout, isSelectAccount, SelectAccount, isMonitorMailBox, MonitorMailBox} from '../model/message.model';
+import {Message, Login, isLogin, isHide, isManualConnectionScreen, isLoginScreen, isLoginManually, isMonitorEmail, SearchByFrom, isUploadMessagesScreen, isUploadMessages, EMLtoNote, isLogout, isSelectAccount, SelectAccount, isMonitorMailBox, MonitorMailBox, isRefresh} from '../model/message.model';
 import {ImapConfig} from '../model/imapConfig.model';
 import {emailConfigure} from '../core/emailConfigure';
 import {IMAP} from '../core/imap';
@@ -244,6 +244,23 @@ export class Panel {
             await joplin.settings.setValue(LAST_STATE, this.lastState);
         } else if (isHide(message)) {
             await this.closeOpenPanel();
+        } else if (isRefresh(message)) {
+            try {
+                await this.account.state();
+
+                // refresh mailboxes
+                const mailBoxes = await this.account.getBoxesPath();
+                this.lastState['mailBoxes'] = mailBoxes;
+                this.lastState['accountConfig'] = this.account.config;
+
+                // refresh joplin notebooks
+                const htmlMainScreen = await mainScreen(this.lastState);
+                await this.setHtml(htmlMainScreen);
+                await joplin.settings.setValue(LAST_STATE, this.lastState);
+            } catch (err) {
+                alert(err);
+                throw err;
+            }
         }
     }
 }

@@ -300,3 +300,9 @@ webviewApi.onMessage(({message})=>{
 function addBlockquote() {
     document.getElementById('quote').innerText = 'Make sure the email provider allows login using the original password; otherwise, use the app password.';
 }
+
+function refresh() {
+    webviewApi.postMessage({
+        refresh: false,
+    });
+}

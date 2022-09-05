@@ -116,14 +116,14 @@ export function isMonitorMailBox(message: any): message is MonitorMailBox {
     return 'monitorMailBox' in message;
 }
 
-export interface RememberMe{
-    rememberMe: boolean,
+export interface Refresh{
+    refresh: boolean,
 
 }
 
 // Type predicates
-export function isRemeberMe(message: any): message is RememberMe {
-    return 'rememberMe' in message;
+export function isRefresh(message: any): message is Refresh {
+    return 'refresh' in message;
 }
 
-export type Message = Login | ManualConnectionScreen | Hide | LoginScreen | LoginManually | SearchByFrom | UploadMessagesScreen | EMLtoNote | Logout | SelectAccount | MonitorMailBox | RememberMe;
+export type Message = Login | ManualConnectionScreen | Hide | LoginScreen | LoginManually | SearchByFrom | UploadMessagesScreen | EMLtoNote | Logout | SelectAccount | MonitorMailBox | Refresh;

@@ -14,7 +14,7 @@ export class IMAP {
     private fromMonitoring: Query = null;
     private mailBoxMonitoring = null;
     private switcher = 1;
-    private delayTime = 1000 * 5;
+    private delayTime = 1000 * 60;
     private accountConfig: Imap.Config;
 
     // To check if there is a query not completed yet.
