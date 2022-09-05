@@ -292,7 +292,7 @@ export async function mainScreen(lastState: State): Promise<string> {
           <div class="form-check form-switch">
             <input class="form-check-input" type="checkbox" role="switch" id="toggle-box"
               onchange="toggleBox()" ${checkedTogle}>
-            <label class="form-check-label" for="flexSwitchCheckChecked">Fetching & Monitoring MailBox</label>
+            <label class="form-check-label" for="flexSwitchCheckChecked">Fetching & Monitoring Mailbox</label>
           </div>
         </div>
         </div>
