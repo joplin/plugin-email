@@ -203,49 +203,18 @@ export function noteLocationBySubject(s: string) {
         s = wrapDir(s);
     }
     let _folders = emailFolders(s);
-    const _tags = emailTags(s);
+    let _tags = emailTags(s);
 
     // If no folder is mentioned, it will locate the note in the 'email messages' folder.
     if (_folders.length === 0) {
         _folders = ['email messages'];
+    } else {
+        // To lowercase all tags to avoid overwriting the same tag again.
+        _tags = _tags.map((e)=>e.toLowerCase());
+
+        // To remove duplicate tags in the same note.
+        _tags = [...new Set(_tags)];
     }
 
     return {folders: _folders, tags: _tags};
 }
-/*
-
-function search(s: string, targetSet: string[]) {
-    let temp = '';
-    let flag = false;
-    let noBoundery = true;
-    const folders: string[] = [];
-
-    for (let i = 0; i < s.length; i++) {
-        if ((s[i] === ' ' || i === 0 ) && !flag) {
-            noBoundery = true;
-        } else if (s[i]!== ' ' && !flag && !targetSet.includes(s[i])) {
-            noBoundery = false;
-        }
-
-        if (targetSet.includes(s[i]) && !flag && noBoundery) {
-            flag = true;
-        } else if (flag && s[i] !== ' ') {
-            temp += s[i];
-        } else if (s[i] === ' ' && flag && noBoundery) {
-            if (temp !== '') {
-                folders.push(temp);
-            }
-            flag = false;
-            noBoundery = false;
-            temp = '';
-            i--;
-        }
-    }
-
-    if (temp !== '') {
-        folders.push(temp);
-    }
-
-    return folders;
-}
-*/

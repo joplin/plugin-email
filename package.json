@@ -1,5 +1,5 @@
 {
-  "name": "joplin-plugin-email-plugin",
+  "name": "joplin-plugin-email",
   "version": "1.0.0",
   "scripts": {
     "dist": "webpack --joplin-plugin-config buildMain && webpack --joplin-plugin-config buildExtraScripts && webpack --joplin-plugin-config createArchive",

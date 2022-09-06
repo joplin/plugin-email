@@ -135,14 +135,14 @@ export class PostNote {
 
         if (exportType === 'HTML') {
             // Replace each attachment img src with the ID of the attachment location in Joplin resources.
-            await this.addInlineAttachments();
+            await this.addInlineImages();
 
             this.note['title'] = this.subject;
             this.note['body'] = this.emailHtmlBody + attachmentsLinks;
             this.note['markup_language'] = 2;
         } else if (exportType === 'Markdown') {
             // Replace each attachment img src with the ID of the attachment location in Joplin resources.
-            await this.addInlineAttachments();
+            await this.addInlineImages();
 
             this.note['title'] = this.subject;
             this.note['body_html'] = this.emailHtmlBody + attachmentsLinks;
@@ -171,7 +171,7 @@ export class PostNote {
         }
     }
 
-    async addInlineAttachments(): Promise<void> {
+    async addInlineImages(): Promise<void> {
         const domParser = new DOMParser();
         const dom: Document = domParser.parseFromString(this.emailHtmlBody, 'text/html');
         const imgs = dom.body.querySelectorAll('img');

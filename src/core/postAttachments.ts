@@ -48,10 +48,10 @@ export class Attachments {
 
         // Will create an actual file of the attachment and post it to Joplin.
         const {contentId, filename, mimeType, content} = attachment;
-        const path = `${tempFolder}${filename}`;
+        const filePath = path.join(tempFolder, filename);
 
         // to create a file
-        fs.writeFileSync(path, Buffer.from(content));
+        fs.writeFileSync(filePath, Buffer.from(content));
 
         // To post a file to Joplin
         const resource = await joplin.data.post(
@@ -60,7 +60,7 @@ export class Attachments {
             {title: filename}, // Resource metadata
             [
                 {
-                    path: path, // Actual file
+                    path: filePath, // Actual file
                 },
             ],
         );
