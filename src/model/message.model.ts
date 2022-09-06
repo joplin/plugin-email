@@ -1,3 +1,4 @@
+import {Config} from 'imap';
 import {ImapConfig} from './imapConfig.model';
 
 export interface Login {
@@ -21,31 +22,31 @@ export function isHide(message: any): message is Hide {
 }
 
 
-export interface ManualConnection {
-    manual_connection: boolean
+export interface ManualConnectionScreen {
+    manualConnectionScreen: boolean
 }
 
 // Type predicates
-export function isManualConnection(message: any): message is ManualConnection {
-    return 'manual_connection' in message;
+export function isManualConnectionScreen(message: any): message is ManualConnectionScreen {
+    return 'manualConnectionScreen' in message;
 }
 
 export interface LoginScreen {
-    login_screen: boolean
+    loginScreen: boolean
 }
 
 // Type predicates
 export function isLoginScreen(message: any): message is LoginScreen {
-    return 'login_screen' in message;
+    return 'loginScreen' in message;
 }
 
 export interface LoginManually extends ImapConfig {
-    login_manually: boolean,
+    loginManually: boolean,
 }
 
 // Type predicates
 export function isLoginManually(message: any): message is LoginManually {
-    return 'login_manually' in message && 'user' in message && 'password' in message &&
+    return 'loginManually' in message && 'user' in message && 'password' in message &&
         'host' in message && 'port' in message && 'tls' in message;
 }
 
@@ -55,7 +56,7 @@ export interface SearchByFrom {
 }
 
 // Type predicates
-export function isSearchByFrom(message: any): message is SearchByFrom {
+export function isMonitorEmail(message: any): message is SearchByFrom {
     if (message.state === 'close') {
         return 'state' in message && 'from' in message;
     } else {
@@ -63,24 +64,66 @@ export function isSearchByFrom(message: any): message is SearchByFrom {
     }
 }
 
-export interface UploadMessages{
-    upload_messages: boolean,
+export interface UploadMessagesScreen{
+    uploadMessagesScreen: boolean,
 }
 
 // Type predicates
-export function isUploadMessages(message: any): message is UploadMessages {
-    return 'upload_messages' in message;
+export function isUploadMessagesScreen(message: any): message is UploadMessagesScreen {
+    return 'uploadMessagesScreen' in message;
 }
 
 export interface EMLtoNote{
     emlFiles: string[],
     folderId: string,
     tags: string[],
+    exportType: 'HTML' | 'Markdown' | 'Text',
+    includeAttachments: boolean,
+    attachmentsStyle: 'Table' | 'Link',
 }
 
 // Type predicates
-export function isEMLtoNote(message: any): message is EMLtoNote {
-    return 'emlFiles' in message && 'folderId' in message && 'tags' in message;
+export function isUploadMessages(message: any): message is EMLtoNote {
+    return 'emlFiles' in message && 'folderId' in message && 'tags' in message && 'exportType' in message && 'includeAttachments' in message && 'attachmentsStyle' in message;
 }
 
-export type Message = Login | ManualConnection | Hide | LoginScreen | LoginManually | SearchByFrom | UploadMessages | EMLtoNote;
+export interface Logout{
+    logout: boolean
+}
+
+// Type predicates
+export function isLogout(message: any): message is Logout {
+    return 'logout' in message;
+}
+
+export interface SelectAccount{
+    account: Config
+}
+
+// Type predicates
+export function isSelectAccount(message: any): message is SelectAccount {
+    return 'account' in message;
+}
+
+export interface MonitorMailBox{
+    monitorMailBox: boolean,
+    mailbox?: string,
+    folderId?: string,
+}
+
+// Type predicates
+export function isMonitorMailBox(message: any): message is MonitorMailBox {
+    return 'monitorMailBox' in message;
+}
+
+export interface Refresh{
+    refresh: boolean,
+
+}
+
+// Type predicates
+export function isRefresh(message: any): message is Refresh {
+    return 'refresh' in message;
+}
+
+export type Message = Login | ManualConnectionScreen | Hide | LoginScreen | LoginManually | SearchByFrom | UploadMessagesScreen | EMLtoNote | Logout | SelectAccount | MonitorMailBox | Refresh;

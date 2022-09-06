@@ -3,7 +3,7 @@ import {emailProviders} from './emailProviders';
 import {ImapConfig} from '../model/imapConfig.model';
 import {EmailProvider} from 'src/model/emailProvider.model';
 
-export function emailConfigure(login: Login): ImapConfig | undefined {
+export function emailConfigure(login: Login): ImapConfig | never {
     let user = login.email;
     const password = login.password;
 
@@ -17,7 +17,7 @@ export function emailConfigure(login: Login): ImapConfig | undefined {
 
     // In the case that the email provider is not present in the email providers list, it will be returned as "undefined".
     if (!config) {
-        return undefined;
+        throw new Error(`Sorry, an email provider couldn't be found, Please use the manual connection.`);
     }
 
     const imapConfig: ImapConfig = {

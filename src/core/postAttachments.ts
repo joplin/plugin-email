@@ -18,34 +18,54 @@ export class Attachments {
         const attachmentsProp: AttachmentProperties[] = [];
         const tempFolder = this.tempFolderPath;
 
-        try {
-            // for each attachment will create an actual file of the attachment and posting to Joplin.
-            for (let i = 0; i < this.attachments.length; i++) {
-                const {contentId, filename} = this.attachments[i];
-                const filePath = path.join(tempFolder, this.attachments[i].filename);
+        // for each attachment will create an actual file of the attachment and posting to Joplin.
+        for (let i = 0; i < this.attachments.length; i++) {
+            const {contentId, filename, mimeType} = this.attachments[i];
+            const filePath = path.join(tempFolder, this.attachments[i].filename);
 
-                // to create a file
-                fs.writeFileSync(filePath, Buffer.from(this.attachments[i].content));
+            // to create a file
+            fs.writeFileSync(filePath, Buffer.from(this.attachments[i].content));
 
-                // To post a file to Joplin
-                const resource = await joplin.data.post(
-                    ['resources'],
-                    null,
-                    {title: filename}, // Resource metadata
-                    [
-                        {
-                            path: filePath, // Actual file
-                        },
-                    ],
-                );
-
-                attachmentsProp.push({contentId: contentId, id: resource.id});
-            }
-
-            return attachmentsProp;
-        } catch (err) {
-            throw err;
+            // To post a file to Joplin
+            const resource = await joplin.data.post(
+                ['resources'],
+                null,
+                {title: filename}, // Resource metadata
+                [
+                    {
+                        path: filePath, // Actual file
+                    },
+                ],
+            );
+            attachmentsProp.push({contentId: contentId, id: resource.id, fileName: filename, mimeType: mimeType});
         }
+
+        return attachmentsProp;
+    }
+
+    async postInlineAttachment(attachment: Attachment): Promise<AttachmentProperties> {
+        const tempFolder = this.tempFolderPath;
+
+        // Will create an actual file of the attachment and post it to Joplin.
+        const {contentId, filename, mimeType, content} = attachment;
+        const filePath = path.join(tempFolder, filename);
+
+        // to create a file
+        fs.writeFileSync(filePath, Buffer.from(content));
+
+        // To post a file to Joplin
+        const resource = await joplin.data.post(
+            ['resources'],
+            null,
+            {title: filename}, // Resource metadata
+            [
+                {
+                    path: filePath, // Actual file
+                },
+            ],
+        );
+
+        return {contentId: contentId, id: resource.id, fileName: filename, mimeType: mimeType};
     }
 }
 
