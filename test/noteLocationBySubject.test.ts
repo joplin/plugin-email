@@ -23,7 +23,7 @@ describe('Naive Case.', ()=>{
         const loc = noteLocationBySubject('@JOPLIN #JOPLIN');
         const ans = {
             folders: ['JOPLIN'],
-            tags: ['JOPLIN'],
+            tags: ['joplin'],
         };
         expect(loc).toEqual(ans);
     });
@@ -171,6 +171,19 @@ describe('Irregular spaces.', ()=>{
         const ans = {
             folders: ['note', 'good'],
             tags: ['note', 'tag'],
+        };
+
+        expect(loc).toEqual(ans);
+    });
+});
+
+describe('Subject with duplicate tags.', ()=>{
+    it('should ignore duplicates tags.', ()=>{
+        const loc = noteLocationBySubject('email subject @joplin #joplin #gmail #joplin #tag #TAG');
+
+        const ans = {
+            folders: ['joplin'],
+            tags: ['joplin', 'gmail', 'tag'],
         };
 
         expect(loc).toEqual(ans);
