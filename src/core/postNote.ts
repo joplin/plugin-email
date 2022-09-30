@@ -95,7 +95,12 @@ export class PostNote {
 
         if (isPostByFolderId(postCriteria)) {
             this.note['parent_id'] = postCriteria['folderId'];
-            emailTags = await this.addTags(postCriteria['tags']);
+            const subject = postCriteria['emailContent'].subject;
+            const emailText = htmlToText(this.emailHtmlBody, {wordwrap: 130, selectors: [{selector: 'img', format: 'skip'}]});
+            const firstLine = (emailText || '').trim().split('\n')[0];
+            const {tags} = noteLocationBySubject(subject + ' ' + firstLine);
+
+            emailTags = await this.addTags(tags);
 
             // Post the note to Joplin.
             const note = await joplin.data.post(['notes'], null, this.note);
