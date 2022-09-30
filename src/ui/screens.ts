@@ -391,7 +391,7 @@ export async function uploadMessagesScreen() {
             <span class="input-group-text" id="basic-addon1"> Export Type </span>
             <select class="form-select" aria-label="Default select example" id = 'export_type'>
               <option value="HTML">HTML</option>;
-              <option value="Markdown">Markdowm</option>;
+              <option value="Markdown">Markdown</option>;
               <option value="Text">Text</option>;
             </select>
           </div>
