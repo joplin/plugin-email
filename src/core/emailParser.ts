@@ -26,6 +26,16 @@ export default class EmailParser extends postalMime {
     }
 
     get html() {
+        // If no html content is found, email text content will be returned if it exists. 
+        if(!this.emailContent.html && this.emailContent.text){
+            let message = '';
+            const linebreaks = this.emailContent.text.split('\n');
+            
+            linebreaks.forEach(linebreak => {
+                message += linebreak.trim() === ''? '<div><br\></div>':  `<div>${linebreak}</div>`;
+            });
+            return message;
+        }
         return this.emailContent.html || '<div><h1>This Email Has No Body</h1></div>\n';
     }
 }
