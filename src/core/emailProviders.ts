@@ -51,4 +51,10 @@ export const emailProviders: EmailProvider[] = [
         tls: true,
     },
 
+    {
+        type: 'strato',
+        host: 'imap.strato.de',
+        port: 993,
+        tls: true,
+    },
 ];
