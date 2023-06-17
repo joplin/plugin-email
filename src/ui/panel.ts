@@ -6,7 +6,6 @@ import {emailConfigure} from '../core/emailConfigure';
 import {IMAP} from '../core/imap';
 import {PostNote} from '../core/postNote';
 import EmailParser from '../core/emailParser';
-import {EmailContent} from '../model/emailContent.model';
 import {SetupTempFolder} from '../core/setupTempFolder';
 import {ExportCriteria} from '../model/exportCriteria.model';
 import {mainScreen, manualScreen, loginScreen, uploadMessagesScreen, loadingScreen} from './screens';
@@ -14,6 +13,7 @@ import {State} from '../model/state.model';
 import {Config} from 'imap';
 import {PostCriteria} from '../model/postCriteria.model';
 import {ACCOUNTS, LAST_STATE} from '../constants';
+import {Email} from 'postal-mime';
 
 export class Panel {
     panels: JoplinViewsPanels;
@@ -214,7 +214,7 @@ export class Panel {
 
                 for (let i = 0; i < emlFiles.length; i++) {
                     const parser = new EmailParser();
-                    const emailContent:EmailContent = await parser.parse(emlFiles[i]);
+                    const emailContent: Email = await parser.parse(emlFiles[i]);
                     const note = new PostNote();
                     const postCriteria: PostCriteria = {emailContent, exportCriteria, tempFolderPath, folderId, tags};
                     await note.post(postCriteria);

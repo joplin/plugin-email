@@ -1,13 +1,13 @@
 import joplin from 'api';
-import {Attachment} from '../model/attachment.model';
 import {Attachments} from './postAttachments';
 import {Note} from '../model/note.model';
 import {AttachmentProperties} from 'src/model/attachmentProperties.model';
 import {Tag} from '../model/tag.model';
 import {ExportCriteria} from '../model/exportCriteria.model';
-import {noteLocationBySubject} from './noteLocationBySubject';
 import {isPostByFolderId, isPostBySubject, PostCriteria} from '../model/postCriteria.model';
 import {convert as htmlToText} from 'html-to-text';
+import {Attachment} from 'postal-mime';
+import EmailSubjectParser from './emailSubjectParser';
 
 export class PostNote {
     emailHtmlBody: string;
@@ -15,7 +15,7 @@ export class PostNote {
     tempFolderPath: string;
     attachments: Attachment[];
     folders: string[] = [];
-    note: Note = {title: null, parent_id: null, body: null, body_html: null, markup_language: null};
+    note: Note = {title: null, parent_id: null, body: null, is_todo: 0, body_html: null, markup_language: null};
 
     async createFolder(folder: string): Promise<void> {
         return await joplin.data.post(['folders'], null, {title: folder});
@@ -98,9 +98,11 @@ export class PostNote {
             const subject = postCriteria['emailContent'].subject;
             const emailText = htmlToText(this.emailHtmlBody, {wordwrap: 130, selectors: [{selector: 'img', format: 'skip'}]});
             const firstLine = (emailText || '').trim().split('\n')[0];
-            const {tags} = noteLocationBySubject(subject + ' ' + firstLine);
+            const emailSubjectParser = new EmailSubjectParser(subject + ' ' + firstLine);
+            const {tags, isTodo} = emailSubjectParser.parse();
+            this.note['is_todo'] = isTodo;
 
-            emailTags = await this.addTags(tags);
+            emailTags = await this.addTags([...tags, ...postCriteria['tags']]);
 
             // Post the note to Joplin.
             const note = await joplin.data.post(['notes'], null, this.note);
@@ -114,7 +116,9 @@ export class PostNote {
             const subject = postCriteria['emailContent'].subject;
             const emailText = htmlToText(this.emailHtmlBody, {wordwrap: 130, selectors: [{selector: 'img', format: 'skip'}]});
             const firstLine = (emailText || '').trim().split('\n')[0];
-            const {folders, tags} = noteLocationBySubject(subject + ' ' + firstLine);
+            const emailSubjectParser = new EmailSubjectParser(subject + ' ' + firstLine);
+            const {folders, tags, isTodo} = emailSubjectParser.parse();
+            this.note['is_todo'] = isTodo;
 
             emailTags = await this.addTags(tags);
             emailFolders = await this.addFolders(folders);
