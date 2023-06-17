@@ -1,8 +1,8 @@
-import {EmailContent} from './emailContent.model';
+import {Email} from 'postal-mime';
 import {ExportCriteria} from './exportCriteria.model';
 
 export interface PostCriteria{
-    emailContent: EmailContent,
+    emailContent: Email,
     exportCriteria: ExportCriteria,
     tempFolderPath: string,
     folderId?: string,

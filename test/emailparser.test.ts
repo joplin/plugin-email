@@ -1,5 +1,5 @@
 globalThis.Blob = require('cross-blob');
-import {EmailContent} from 'src/model/emailContent.model';
+import {Email} from 'postal-mime';
 import EmailParser from '../src/core/emailParser';
 
 it(`throw an error if the EML file is empty.`, async ()=>{
@@ -10,7 +10,7 @@ it(`throw an error if the EML file is empty.`, async ()=>{
 
 it(`The EML file starts with blank lines.`, async ()=>{
     const emailParser = new EmailParser();
-    const emailContent: EmailContent = await emailParser.parse(EMLStartsWithBlankLines);
+    const emailContent: Email = await emailParser.parse(EMLStartsWithBlankLines);
 
     const subject = emailContent.subject;
     const HTML = emailContent.html;
@@ -22,7 +22,7 @@ it(`The EML file starts with blank lines.`, async ()=>{
 
 it(`The EML file ends with blank lines.`, async ()=>{
     const emailParser = new EmailParser();
-    const emailContent: EmailContent = await emailParser.parse(EMLEndsWithBlankLines);
+    const emailContent: Email = await emailParser.parse(EMLEndsWithBlankLines);
 
     const subject = emailContent.subject;
     const HTML = emailContent.html;
@@ -35,7 +35,7 @@ it(`The EML file ends with blank lines.`, async ()=>{
 
 it(`'No Subject', If an email without a subject.`, async ()=>{
     const emailParser = new EmailParser();
-    const emailContent: EmailContent = await emailParser.parse(emailWithoutSubject);
+    const emailContent: Email = await emailParser.parse(emailWithoutSubject);
 
     const subject = emailContent.subject;
     const HTML = emailContent.html;
@@ -47,7 +47,7 @@ it(`'No Subject', If an email without a subject.`, async ()=>{
 
 it(`email without body`, async ()=>{
     const emailParser = new EmailParser();
-    const emailContent: EmailContent = await emailParser.parse(emailWithoutBody);
+    const emailContent: Email = await emailParser.parse(emailWithoutBody);
 
     const subject = emailContent.subject;
     const HTML = emailContent.html;

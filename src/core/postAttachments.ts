@@ -1,7 +1,7 @@
 import * as path from 'path';
 import joplin from 'api';
-import {Attachment} from '../model/attachment.model';
 import {AttachmentProperties} from '../model/attachmentProperties.model';
+import {Attachment} from 'postal-mime';
 const fs = joplin.require('fs-extra');
 
 export class Attachments {

@@ -1,42 +1,42 @@
 const postalMime = require('postal-mime/dist/node').postalMime.default;
-import {EmailContent} from '../model/emailContent.model';
-
+import {Email} from 'postal-mime';
+import StringOps from '../utils/stringOps';
 
 export default class EmailParser extends postalMime {
-    emailContent: EmailContent;
+    emailContent: Email;
+
     constructor() {
         super();
     }
 
     // Email in RFC 822 format.
-    async parse(message: string): Promise<EmailContent> {
+    async parse(message: string): Promise<Email> {
         // A message is invalid if it starts with a space.
         message = message.trim();
-
         this.emailContent = await super.parse(message);
-        this.emailContent.subject = this.subject;
-        this.emailContent.html = this.html;
-        this.emailContent.attachments = this.emailContent.attachments;
+        this.emailContent.subject = this.getSubject();
+        this.emailContent.html = this.getHTML();
 
         return (this.emailContent);
     }
 
-    get subject() {
+    getSubject() {
         return this.emailContent.subject || 'No Subject';
     }
 
-    get html() {
-        // If no html content is found, email text content will be returned if it exists. 
-        if(!this.emailContent.html && this.emailContent.text){
-            let message = '';
-            const linebreaks = this.emailContent.text.split('\n');
-            
-            linebreaks.forEach(linebreak => {
-                message += linebreak.trim() === ''? '<div><br\></div>':  `<div>${linebreak}</div>`;
-            });
-            return message;
+    getHTML() {
+        const {html, text} = this.emailContent;
+        const {escapeHTML} = StringOps;
+
+        // If HTML content does not exist, email text content (wrapping with html) will be returned if it does.
+        if (!html && text) {
+            const linebreaks = text.split('\n');
+            const splitText = (line: string) => (line.trim() === '' ? '<div><br\></div>' : `<div>${escapeHTML(line)}</div>`);
+            const emailText = linebreaks.map(splitText).join('');
+
+            return emailText;
         }
-        return this.emailContent.html || '<div><h1>This Email Has No Body</h1></div>\n';
+
+        return html || '<div><h1>This Email Has No Body</h1></div>\n';
     }
 }
-
