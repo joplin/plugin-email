@@ -202,9 +202,10 @@ export async function mainScreen(lastState: State): Promise<string> {
 
     let joplinFolders: JopinFolders;
     const folders = [];
+    let pageNum = 1;
 
     do {
-        joplinFolders = await joplin.data.get(['folders']);
+        joplinFolders = await joplin.data.get(['folders'], {'page': pageNum++});
 
         for (let i = 0; i < joplinFolders.items.length; i++) {
             const folder = joplinFolders.items[i];
@@ -326,9 +327,10 @@ export async function mainScreen(lastState: State): Promise<string> {
 export async function uploadMessagesScreen() {
     let joplinFolders: JopinFolders;
     const folders = [];
+    let pageNum = 1;
 
     do {
-        joplinFolders = await joplin.data.get(['folders']);
+        joplinFolders = await joplin.data.get(['folders'], {'page': pageNum++});
 
         for (let i = 0; i < joplinFolders.items.length; i++) {
             const folder = joplinFolders.items[i];
