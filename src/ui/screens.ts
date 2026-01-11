@@ -26,8 +26,8 @@ export async function loginScreen() {
     const options: string[] = [];
     let htmlAccounts = '';
     for (const key of Object.keys(accounts)) {
-        const config = JSON.stringify( accounts[key]);
-        const option = `<option value=${config}>${key}</option>`;
+        const config = encodeURIComponent(JSON.stringify(accounts[key]));
+        const option = `<option value="${config}">${key}</option>`;
         options.push(option);
     }
     if (options.length) {
@@ -232,7 +232,7 @@ export async function mainScreen(lastState: State): Promise<string> {
 
     const mailBoxesOptions = [];
     lastState['mailBoxes'].forEach((element) => {
-        const option = lastState['mailBox'] === element.path ? `<option selected value="${element.value}">${element.path}</option>`: `<option value="${element.value}">${element.path}</option>`;
+        const option = lastState['mailBox'] === element.path ? `<option selected value="${element.value}">${element.path}</option>` : `<option value="${element.value}">${element.path}</option>`;
         mailBoxesOptions.push(option);
     });
 
