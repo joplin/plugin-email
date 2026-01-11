@@ -1,6 +1,9 @@
 <h1 align = "center" > Email Plugin </h1>
 
-This plugin adds the ability to fetch email messages (including attachments) and converts them to Joplin notes in various formats, either by monitoring any `new` or `unread` messages from a specific email address or a specific mailbox, or by uploading downloaded email messages to the plugin without having to be logged in.
+This plugin allows you to fetch email messages (including attachments) and convert them into Joplin notes in multiple formats.
+
+Emails can be processed automatically by monitoring `new` or `unread` messages from a specific email address or mailbox, or manually by uploading downloaded email messages in `.eml` format without needing to log in to the plugin.
+
 
 ***
 
@@ -16,64 +19,96 @@ This plugin adds the ability to fetch email messages (including attachments) and
 
 ## Features
 
-- Monitoring and fetching any `new` or `unread` messages from a specific email address.
+- Monitor and fetch **new or unread emails** from a specific email address.
 
-- Monitoring and fetching any `new` or `unread` messages from a specific mailbox.
+- Monitor and fetch **new or unread emails** from a selected mailbox.
 
-- Send the converted message to specific notebooks and add tags to the note by using `@` or `#` in the email subject or first line of email content and then forward the email to yourself.
+- You can control how notes are created using simple syntax in the **email subject** or the **first line of the email body**:
+  - `@notebook` → save the note to a specific notebook
+  - `#tag` → add tags to the note
+  - `!Subject` → create a **Todo** note
 
-- Convert emails (including attachments) to notes without having to be logged into the plugin.
+- Convert email messages (including attachments) into notes **without being logged into the plugin**.
 
-- Convert email messages to notes in different formats (`HTML`, `Markdown`, `Text`).
+- Convert emails into notes using different output formats:
+  - `HTML`
+  - `Markdown`
+  - `Plain Text`
 
-- Show attachments in different styles, whether they are in the form of a `Table` or `Links`.
+- Display attachments in multiple styles, such as:
+  - `Table`
+  - `Links`
 
 ***
 
 ## How to use
 
-- ### Monitoring and fetching from a specific email address
+- ### 🔍 Monitoring and Fetching from a Specific Email Address
 
-  - Open Email Plugin.
+  1. Open the **Email Plugin**.
+  2. Sign in with your email credentials.
+  3. Enter the email account you want to **monitor for new or unread messages**, then enable **Fetching & Monitoring**.
 
-  - Login to the plugin with your email address and password.
-
-  - Enter the email account you want to start fetching and monitoring `new` or `unread` messages from and click on the `Fetching & Monitoring` toggle.
-
-    - If you enter your email address in the `from` field, simply forward the email message to yourself after adding some easy syntax to the end of the email subject, or add this syntax in a new line at the beginning of the message content, and the plugin will handle the rest.
-
-      - **Set a note title** : Change note title by changing the subject of the email.
-      - **Add to a notebook** : Add `@notebook` to send it to a specific notebook.
-      - **Add tags** : Add `#tag` to organize the note with a tag.
-
-        > **For example**: Say you want this email located in the **joplin** and **gmail** folders and also want to add **gmail** and **email** as tags to the note. Just edit the email subject or add a new line at the beginning of the message content like this:
-        >>Email subject: My message @**joplin** @**email** #**gmail** #**email**
-        
-        https://user-images.githubusercontent.com/58605547/188909511-479bff3b-bb9c-42da-9d48-a29d8b22fd4b.mp4
-        
-    - Otherwise the email messages will be in the `email messages` folder.
-
-***
-
-- ### Monitoring and fetching from a specific mailbox
-
-  - Open Email Plugin.
-
-  - Login to the plugin with your email address and password.
-
-  - Select a specific mailbox and notebook in which you want the email messages to be located and click on the `Fetching & Monitoring Mailbox` toggle.
-
-***
-
-- ### Upload downloaded email messages
-
-  - Open Email Plugin.
-
-  - Click on the `convert saved messages` button.
+  #### ✉️ Forwarding Emails to Create Notes
+    If you enter **your own email address** in the **From** field, you can simply **forward emails to yourself**.  
+    
+    You can control how the note is created using the following syntax:
+    - **Set note title**  
+      The email subject is used as the note title.
   
-  - Upload `.eml` format files of email messages that you want to convert to notes.
+    - **Assign to a notebook**  
+    Add `@notebook-name` to send the note to a specific notebook.
 
-  - Select a notebook, enter the tags, select the export options, and click on the `convert` button.
+    - **Add tags**  
+    Add `#tag-name` to attach tags to the note.
+
+    - **Create a Todo note**  
+      Start the subject with `!` to create a **Todo** instead of a regular note.
+
+
+  #### 🧩 Example
+  Suppose you want:
+    - The note to be saved in the **joplin** and **email** notebooks
+    - The note to be tagged with **gmail** and **email**
+    - The note to be created as a **Todo**
+  
+  Email subject:
+  `!My message @joplin @email #gmail #email`
+
+
+  🎥 Demo:
+  
+    https://user-images.githubusercontent.com/58605547/188909511-479bff3b-bb9c-42da-9d48-a29d8b22fd4b.mp4
+
+  #### If no notebook is specified, the note will be placed in the default **Email Messages** folder.
+
+***
+
+- ### 📂 Monitoring and Fetching from a Specific Mailbox
+
+  1. Open the **Email Plugin**.
+  2. Sign in with your email credentials.
+  3. Select:
+     - The mailbox you want to monitor
+     - The notebook where notes should be created
+  4. Enable **Fetching & Monitoring Mailbox**.
+
+  All new or unread emails from the selected mailbox will be converted into notes automatically.
+
+  Notes created from monitored mailboxes will automatically apply the following syntax (`#` for tags, `!` for Todos) without any additional steps.
+
+***
+
+- ### 📥 Uploading Downloaded Email Messages
+  1. Open the **Email Plugin**.
+  2. Click **Convert Saved Messages**.
+  3. Upload email files in `.eml` format.
+  4. Choose:
+     - Target notebook
+     - Tags
+     - Export options
+  5. Click **Convert** to create notes from the uploaded emails.
+
 
 ## Important Notes
 

@@ -168,7 +168,7 @@ function logout() {
 
 function selectedAccount() {
     const accountsInput = document.getElementById('accounts');
-    const account = accountsInput.value;
+    const account = decodeURIComponent(accountsInput.value);
     const config = JSON.parse(account);
 
     disabledManualLoginScreen(true);
@@ -228,55 +228,75 @@ function disabledLoginScreen(flag) {
     }
 }
 
-function disabledManualLoginScreen(flag) {
-    const emailInput = document.getElementById('email');
-    const passwordInput = document.getElementById('password');
-    const serverInput = document.getElementById('server');
-    const portInput = document.getElementById('port');
-    const sslTlsInput = document.getElementById('ssl_tls');
-    const loginBtn = document.getElementById('login_btn');
-    const selectedAccountBtn = document.getElementById('selectedAccount');
+function disabledManualLoginScreen(disable) {
+    const elements = {
+        email: document.getElementById('email'),
+        password: document.getElementById('password'),
+        server: document.getElementById('server'),
+        port: document.getElementById('port'),
+        sslTls: document.getElementById('ssl_tls'),
+        loginBtn: document.getElementById('login_btn'),
+        selectedAccountBtn: document.getElementById('selectedAccount'),
+    };
 
-    if (flag === false) {
-        if (selectedAccountBtn) {
-            selectedAccountBtn.disabled = false;
-            selectedAccountBtn.innerHTML = 'Login';
-        } else {
-            emailInput.readOnly = passwordInput.readOnly = serverInput.readOnly = portInput.readOnly = sslTlsInput.disabled = loginBtn.disabled = false;
-            loginBtn.innerHTML = 'Login';
-        }
-    } else {
-        if (selectedAccountBtn) {
-            selectedAccountBtn.disabled = true;
-            const spinner = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...`;
-            selectedAccountBtn.innerHTML = spinner;
-        } else {
-            emailInput.readOnly = passwordInput.readOnly = serverInput.readOnly = portInput.readOnly = sslTlsInput.disabled = loginBtn.disabled = true;
-            const spinner = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...`;
-            loginBtn.innerHTML = spinner;
-        }
+    const spinnerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...`;
+
+    // If selected account button exists, control only it
+    if (elements.selectedAccountBtn) {
+        elements.selectedAccountBtn.disabled = disable;
+        elements.selectedAccountBtn.innerHTML = disable ? spinnerHTML : 'Login';
+        return;
+    }
+    
+    [
+        elements.email,
+        elements.password,
+        elements.server,
+        elements.port,
+    ].forEach((el) => {
+        if (el) el.readOnly = disable;
+    });
+
+    if (elements.sslTls) {
+        elements.sslTls.disabled = disable;
+    }
+
+    if (elements.loginBtn) {
+        elements.loginBtn.disabled = disable;
+        elements.loginBtn.innerHTML = disable ? spinnerHTML : 'Login';
     }
 }
 
-function disabledUploadEMLScreen(flag) {
-    const filesInput = document.getElementById('formFileMultiple');
-    const folderInput = document.getElementById('notebook');
-    const tagsDiv = document.getElementById('div-tag');
-    const includeAttachmentsInput = document.getElementById('include_attachments');
-    const exportTypeInput = document.getElementById('export_type');
-    const attachmentsStyleInput = document.getElementById('attachments_style');
-    const loginBtn = document.getElementById('convert_btn');
+function disabledUploadEMLScreen(disable) {
+    const elements = {
+        filesInput: document.getElementById('formFileMultiple'),
+        folderInput: document.getElementById('notebook'),
+        tagsDiv: document.getElementById('div-tag'),
+        includeAttachmentsInput: document.getElementById('include_attachments'),
+        exportTypeInput: document.getElementById('export_type'),
+        attachmentsStyleInput: document.getElementById('attachments_style'),
+        loginBtn: document.getElementById('convert_btn'),
+    };
 
-    if (flag === false) {
-        filesInput.disabled = folderInput.disabled = includeAttachmentsInput.disabled = exportTypeInput.disabled = attachmentsStyleInput.disabled = loginBtn.disabled = false;
-        tagsDiv.style.pointerEvents = 'auto';
-        loginBtn.innerHTML = 'Convert';
-    } else {
-        filesInput.disabled = folderInput.disabled = includeAttachmentsInput.disabled = exportTypeInput.disabled = attachmentsStyleInput.disabled = true;
-        tagsDiv.style.pointerEvents = 'none';
-        const spinner = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...`;
-        loginBtn.disabled = true;
-        loginBtn.innerHTML = spinner;
+    const spinnerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...`;
+    
+    [
+        elements.filesInput,
+        elements.folderInput,
+        elements.includeAttachmentsInput,
+        elements.exportTypeInput,
+        elements.attachmentsStyleInput,
+    ].forEach((el) => {
+        if (el) el.disabled = disable;
+    });
+
+    if (elements.tagsDiv) {
+        elements.tagsDiv.style.pointerEvents = disable ? 'none' : 'auto';
+    }
+
+    if (elements.loginBtn) {
+        elements.loginBtn.disabled = disable;
+        elements.loginBtn.innerHTML = disable ? spinnerHTML : 'Convert';
     }
 }
 
